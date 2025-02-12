@@ -19,8 +19,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Set the port for Express (use 3000 by default)
-const port = process.env.PORT || 3000;
+// Set the port for Express (use Railway-assigned port)
+const port = process.env.PORT || 5000;
 
 // ✅ Log MongoDB URI (without exposing the password)
 console.log("🔍 MongoDB URI:", process.env.MONGO_URI.replace(/:\/\/.*@/, "://[HIDDEN]@"));
@@ -28,9 +28,14 @@ console.log("🔍 MongoDB URI:", process.env.MONGO_URI.replace(/:\/\/.*@/, "://[
 // ✅ Enable Mongoose `strictQuery` Mode (Avoid Future Deprecation Warnings)
 mongoose.set("strictQuery", false);
 
-// ✅ Connect to MongoDB with Proper Error Handling
+// ✅ Connect to MongoDB with `authMechanism` Fix for Railway
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    authMechanism: "SCRAM-SHA-256", // ✅ Fix for authentication failure
+    serverSelectionTimeoutMS: 5000, // ✅ Prevent long startup delays
+  })
   .then(() => console.log("✅ MongoDB connected successfully!"))
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
@@ -54,20 +59,14 @@ app.get("/api/protected", verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}! This is a protected route.` });
 });
 
-// Appointment Routes (Mock Example)
-app.get("/api/appointments", verifyToken, (req, res) => {
-  res.json([
-    { title: "Doctor Visit", date: "2024-06-30" },
-    { title: "Business Meeting", date: "2024-07-05" },
-  ]);
-});
-
-// Customer Routes (Mock Example)
-app.get("/api/customers", verifyToken, (req, res) => {
-  res.json([
-    { id: 1, first_name: "John", last_name: "Doe", email: "john@example.com" },
-    { id: 2, first_name: "Jane", last_name: "Smith", email: "jane@example.com" },
-  ]);
+// Appointment Routes ✅ Now Fetches from MongoDB
+app.get("/api/appointments", verifyToken, async (req, res) => {
+  try {
+    const appointments = await mongoose.model("Appointment").find();
+    res.json(appointments);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch appointments." });
+  }
 });
 
 // Global Error Handling
@@ -79,5 +78,5 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Rejection:", reason);
 });
 
-// Start Express Server
+// Start Express Server ✅
 app.listen(port, () => console.log(`🚀 Backend server running on port ${port}`));
