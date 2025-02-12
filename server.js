@@ -19,8 +19,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Set the port for Express (use Railway-assigned port)
-const port = process.env.PORT || 5000;
+// ✅ Set the port to use Railway’s assigned port (Default to 8080)
+const port = process.env.PORT || 8080;
 
 // ✅ Log MongoDB URI (without exposing the password)
 console.log("🔍 MongoDB URI:", process.env.MONGO_URI.replace(/:\/\/.*@/, "://[HIDDEN]@"));
@@ -42,7 +42,7 @@ mongoose
     process.exit(1); // Exit process if MongoDB fails to connect
   });
 
-// Base Route
+// Base Route ✅ Verify the Backend is Running
 app.get("/", (req, res) => {
   res.send("🚀 Backend Server is running on port " + port);
 });
@@ -59,7 +59,7 @@ app.get("/api/protected", verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}! This is a protected route.` });
 });
 
-// Appointment Routes ✅ Now Fetches from MongoDB
+// Appointment Routes ✅ Fetching from MongoDB
 app.get("/api/appointments", verifyToken, async (req, res) => {
   try {
     const appointments = await mongoose.model("Appointment").find();
@@ -78,5 +78,9 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Rejection:", reason);
 });
 
-// Start Express Server ✅
-app.listen(port, () => console.log(`🚀 Backend server running on port ${port}`));
+app.get("/api/test", (req, res) => {
+  res.json({ message: "✅ API is working!" });
+});
+
+// ✅ Start Express Server with Railway’s Assigned Port
+app.listen(port, () => console.log(`🚀 Backend Server running on port ${port}`));
