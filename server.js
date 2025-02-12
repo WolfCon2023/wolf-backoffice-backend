@@ -22,11 +22,20 @@ app.use(express.json());
 // Set the port for Express (use 3000 by default)
 const port = process.env.PORT || 3000;
 
-// Connect to MongoDB
+// ✅ Log MongoDB URI (without exposing the password)
+console.log("🔍 MongoDB URI:", process.env.MONGO_URI.replace(/:\/\/.*@/, "://[HIDDEN]@"));
+
+// ✅ Enable Mongoose `strictQuery` Mode (Avoid Future Deprecation Warnings)
+mongoose.set("strictQuery", false);
+
+// ✅ Connect to MongoDB with Proper Error Handling
 mongoose
-  .connect(process.env.MONGO_URI, {})
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("✅ MongoDB connected successfully!"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1); // Exit process if MongoDB fails to connect
+  });
 
 // Base Route
 app.get("/", (req, res) => {
