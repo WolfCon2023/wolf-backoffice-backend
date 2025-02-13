@@ -1,24 +1,13 @@
-const jwt = require("jsonwebtoken");
+const express = require("express");
+const { loginUser, registerUser } = require("../controllers/authController");
 
-const verifyToken = (req, res, next) => {
-    const authHeader = req.header("Authorization");
+const router = express.Router();
 
-    if (!authHeader) {
-        return res.status(403).json({ message: "Access Denied: No token provided" });
-    }
+// Register New User
+router.post("/register", registerUser);
 
-    const token = authHeader.split(" ")[1];
+// Login User
+router.post("/login", loginUser);
 
-    try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = verified;
-        next();
-    } catch (err) {
-        if (err.name === "TokenExpiredError") {
-            return res.status(401).json({ message: "Session expired. Please log in again." });
-        }
-        return res.status(401).json({ message: "Invalid Token" });
-    }
-};
+module.exports = router;
 
-module.exports = verifyToken;
