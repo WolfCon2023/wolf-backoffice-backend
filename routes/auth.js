@@ -1,16 +1,12 @@
-const jwt = require("jsonwebtoken");
+const express = require("express");
+const { loginUser, registerUser } = require("../controllers/authController"); // ✅ Ensure path is correct
 
-const verifyToken = (req, res, next) => {
-    const token = req.header("Authorization");
-    if (!token) return res.status(403).json({ message: "Access Denied" });
+const router = express.Router();
 
-    try {
-        const verified = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
-        req.user = verified;
-        next();
-    } catch (err) {
-        res.status(401).json({ message: "Invalid Token" });
-    }
-};
+// ✅ Register New User
+router.post("/register", registerUser);
 
-module.exports = verifyToken;
+// ✅ Login User
+router.post("/login", loginUser);
+
+module.exports = router;
