@@ -42,7 +42,7 @@ const verifyToken = require("./middleware/authMiddleware");
 
 // ✅ Root Route (Fix for "Cannot GET /")
 app.get("/", (req, res) => {
-    res.send("<h1>Welcome to Wolf Backoffice API</h1><p>Visit <a href='/api/test'>/api/test</a> to check API status.</p>");
+    res.send("<h1>Welcome to the Wolf Backoffice Suite API</h1><p>Visit <a href='/api/test'>/api/test</a> to check API status.</p>");
 });
 
 // ✅ Test API Route (Ensures API is running)
