@@ -1,17 +1,32 @@
-const express = require("express");
-const User = require("../models/User");
-const verifyToken = require("../middleware/authMiddleware");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
-const router = express.Router();
+const UserSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
-// GET all users (Protected)
-router.get("/", verifyToken, async (req, res) => {
-    try {
-        const users = await User.find().select("-password"); // Exclude password from response
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ message: "Server error" });
-    }
+// Hash password before saving to DB
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    console.error("Error hashing password:", error);
+    next(error);
+  }
 });
 
-module.exports = router;
+// Method to Compare Passwords
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("User", UserSchema);
