@@ -3,6 +3,34 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// Set Mongoose strictQuery mode to prevent warnings
+mongoose.set("strictQuery", false);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Load environment variables
+const mongoURI = process.env.MONGO_URI;
+const port = process.env.PORT || 8080;
+
+if (!mongoURI) {
+    console.error("❌ Error: MONGO_URI is not defined in the environment variables.");
+    process.exit(1);
+}
+
+// Connect to MongoDB
+mongoose
+    .connect(mongoURI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log("✅ MongoDB connected successfully!"))
+    .catch((err) => {
+        console.error("❌ MongoDB connection error:", err.message);
+        process.exit(1);
+    });
+
 // Import Models
 require("./models/User");
 require("./models/Appointment");
@@ -12,41 +40,9 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
 const verifyToken = require("./middleware/authMiddleware");
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Set the port dynamically
-const port = process.env.PORT || 8080;
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => console.log("MongoDB connected successfully!"))
-.catch((err) => {
-    console.error("MongoDB connection error:", err.message);
-    process.exit(1);
-});
-
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", verifyToken, userRoutes); // Secure user routes
-
-// Test API
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working!" });
-});
-
-// Global Error Handling
-process.on("uncaughtException", (err) => {
-    console.error("Uncaught Exception:", err);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-    console.error("Unhandled Rejection:", reason);
-});
+app.use("/api/users", verifyToken, userRoutes);
 
 // Start Server
-app.listen(port, () => console.log(`Server running on port ${port}`));
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
