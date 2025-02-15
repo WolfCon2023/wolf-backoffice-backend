@@ -40,7 +40,12 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
 const verifyToken = require("./middleware/authMiddleware");
 
-// ✅ Test API Route (Added)
+// ✅ Root Route (Fix for "Cannot GET /")
+app.get("/", (req, res) => {
+    res.send("<h1>Welcome to Wolf Backoffice API</h1><p>Visit <a href='/api/test'>/api/test</a> to check API status.</p>");
+});
+
+// ✅ Test API Route (Ensures API is running)
 app.get("/api/test", (req, res) => {
     res.json({ message: "API is working!" });
 });
