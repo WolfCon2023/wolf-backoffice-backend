@@ -40,9 +40,14 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
 const verifyToken = require("./middleware/authMiddleware");
 
+// ✅ Test API Route (Added)
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working!" });
+});
+
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", verifyToken, userRoutes);
 
 // Start Server
-app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+app.listen(port, "0.0.0.0", () => console.log(`🚀 Server running on port ${port}`));
