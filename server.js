@@ -38,6 +38,7 @@ require("./models/Appointment");
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
+const appointmentRoutes = require("./routes/appointments"); // ✅ Added appointment routes
 const verifyToken = require("./middleware/authMiddleware");
 
 // ✅ Root Route (Fix for "Cannot GET /")
@@ -53,6 +54,7 @@ app.get("/api/test", (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", verifyToken, userRoutes);
+app.use("/api/appointments", appointmentRoutes); // ✅ Added appointment API routes
 
 // Start Server
 app.listen(port, "0.0.0.0", () => console.log(`🚀 Server running on port ${port}`));
