@@ -38,7 +38,7 @@ require("./models/Appointment");
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
-const appointmentRoutes = require("./routes/appointments"); // ✅ Added appointment routes
+const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Added appointment routes
 const verifyToken = require("./middleware/authMiddleware");
 
 // ✅ Root Route (Fix for "Cannot GET /")
