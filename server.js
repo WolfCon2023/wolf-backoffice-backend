@@ -3,6 +3,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// Debugging - Check if MONGO_URI is being loaded
+console.log("🔍 Debugging MONGO_URI:", process.env.MONGO_URI || "❌ Not Defined");
+
 // Set Mongoose strictQuery mode to prevent warnings
 mongoose.set("strictQuery", false);
 
@@ -38,7 +41,7 @@ require("./models/Appointment");
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/users");
-const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Added appointment routes
+const appointmentRoutes = require("./routes/appointmentsRoutes");
 const verifyToken = require("./middleware/authMiddleware");
 
 // ✅ Root Route (Fix for "Cannot GET /")
@@ -54,7 +57,14 @@ app.get("/api/test", (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", verifyToken, userRoutes);
-app.use("/api/appointments", appointmentRoutes); // ✅ Added appointment API routes
+app.use("/api/appointments", appointmentRoutes);
+
+console.log("✅ Available routes:");
+app._router.stack.forEach((r) => {
+  if (r.route) {
+    console.log(`${r.route.stack[0].method.toUpperCase()} ${r.route.path}`);
+  }
+});
 
 // Start Server
 app.listen(port, "0.0.0.0", () => console.log(`🚀 Server running on port ${port}`));

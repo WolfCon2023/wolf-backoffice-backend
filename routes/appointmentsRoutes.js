@@ -1,12 +1,24 @@
+console.log("🔍 Appointments Routes Loaded");
 const express = require("express");
-const Appointment = require("../models/Appointment"); // ✅ Ensure model is imported
+const Appointment = require("../models/Appointment"); // Ensure model is imported
 
 const router = express.Router();
+
+// ✅ API to Get All Appointments
+router.get("/", async (req, res) => {
+  try {
+    const appointments = await Appointment.find(); // Fetch all appointments
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.error("❌ Error fetching appointments:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // ✅ API to Create an Appointment
 router.post("/", async (req, res) => {
   try {
-    console.log("Received Appointment Data:", req.body); // ✅ Debugging Log
+    console.log("Received Appointment Data:", req.body); // Debugging Log
 
     // Validate required fields
     const { title, date, scheduledBy } = req.body;
