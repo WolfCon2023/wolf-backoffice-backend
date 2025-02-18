@@ -6,6 +6,7 @@ const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentsRoutes");
+const userRoutes = require("./routes/users"); // ✅ Ensure this is imported
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,7 @@ mongoose
 // ✅ Register API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/users", userRoutes); // ✅ Ensure this is registered
 
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
@@ -34,13 +36,17 @@ const buildPath = path.join(__dirname, "build");
 app.use(express.static(buildPath));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(buildPath, "index.html"), (err) => {
+  const indexPath = path.join(buildPath, "index.html");
+  console.log(`✅ Serving frontend: ${indexPath}`);
+
+  res.sendFile(indexPath, (err) => {
     if (err) {
+      console.error("❌ Error serving index.html:", err.message);
       res.status(500).send("Error loading frontend.");
     }
   });
 });
 
-// ✅ Start the server AFTER connecting to MongoDB
+// ✅ Start the backend server
 const port = process.env.PORT || 8080;
 app.listen(port, () => console.log(`🚀 Backend running on port ${port}`));
