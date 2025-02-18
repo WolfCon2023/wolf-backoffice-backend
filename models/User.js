@@ -6,8 +6,11 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   employeeId: { type: String, unique: true, default: function() {
-    return `EMP-${Math.floor(1000 + Math.random() * 9000)}`; // Random 4-digit ID
+    return `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
   }},
+  firstName: { type: String, required: true },  // ✅ New Field
+  lastName: { type: String, required: true },   // ✅ New Field
+  contactNumber: { type: String, required: false } // ✅ New Field (optional)
 }, { timestamps: true });
 
 // ✅ Hash password before saving to DB
