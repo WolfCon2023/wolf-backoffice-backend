@@ -20,14 +20,15 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // Create and Save User
-    const newUser = new User({ username, email, password });
+    // ✅ Fix: Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
     const token = generateToken(newUser);
@@ -57,7 +58,8 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await user.comparePassword(password);
+    // ✅ Fix: Use bcrypt to compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
