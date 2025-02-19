@@ -81,4 +81,24 @@ router.get("/history", async (req, res) => {
   }
 });
 
+// ✅ API to Update an Appointment
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    // Find and update appointment
+    const updatedAppointment = await Appointment.findByIdAndUpdate(id, updatedData, { new: true });
+
+    if (!updatedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    res.json({ message: "Appointment updated successfully", appointment: updatedAppointment });
+  } catch (error) {
+    console.error("❌ Error updating appointment:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 module.exports = router; // ✅ Ensure this is correctly exported
