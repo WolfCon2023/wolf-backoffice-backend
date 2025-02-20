@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Appointment = require("../models/Appointment");
 const User = require("../models/User"); // ✅ Ensure User model is imported
+const verifyToken = require("../middleware/authMiddleware"); // ✅ Import authentication middleware
 
 const router = express.Router();
 
@@ -100,5 +101,19 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+// ✅ Protect DELETE route with authentication
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const deletedAppointment = await Appointment.findByIdAndDelete(req.params.id);
+    if (!deletedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    res.json({ message: "Appointment deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 
 module.exports = router; // ✅ Ensure this is correctly exported
