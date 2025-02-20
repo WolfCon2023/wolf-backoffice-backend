@@ -1,4 +1,4 @@
-const mongoose = require("mongoose"); // ✅ Import mongoose
+const mongoose = require("mongoose");
 
 const AppointmentSchema = new mongoose.Schema({
     title: { type: String, required: true },
@@ -8,7 +8,9 @@ const AppointmentSchema = new mongoose.Schema({
     contactPhone: { type: String },
     contactEmail: { type: String },
     scheduledBy: { type: String, required: true },
-    notes: { type: String }
-}, { collection: "appointments" }); // ✅ Explicitly set the collection name
+    notes: { type: String },
+    toBeDeleted: { type: Boolean, default: false }, // New field
+}, { collection: "appointments" });
 
 module.exports = mongoose.model("Appointment", AppointmentSchema);
+

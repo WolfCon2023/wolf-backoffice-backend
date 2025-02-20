@@ -105,15 +105,23 @@ router.put("/:id", async (req, res) => {
 // ✅ Protect DELETE route with authentication
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
+    console.log("🔍 DELETE Request Received for ID:", req.params.id);
+    console.log("🔍 User Making Request:", req.user);
+
     const deletedAppointment = await Appointment.findByIdAndDelete(req.params.id);
     if (!deletedAppointment) {
+      console.log("❌ Appointment Not Found:", req.params.id);
       return res.status(404).json({ message: "Appointment not found" });
     }
+
+    console.log("✅ Appointment Deleted:", req.params.id);
     res.json({ message: "Appointment deleted successfully" });
   } catch (error) {
+    console.error("❌ Error deleting appointment:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
 
 
 module.exports = router; // ✅ Ensure this is correctly exported

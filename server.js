@@ -1,4 +1,6 @@
 require("dotenv").config();
+console.log("🔍 Loaded JWT_SECRET:", process.env.JWT_SECRET ? "Exists" : "MISSING"); // Debugging log
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
