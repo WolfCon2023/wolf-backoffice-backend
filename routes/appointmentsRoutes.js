@@ -27,6 +27,27 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ API to Create an Appointment
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    console.log("🔍 Received Appointment Data:", req.body); // Debugging Log
+
+    // Validate required fields
+    const { title, date, scheduledByUserId } = req.body;
+    if (!title || !date || !scheduledByUserId) {
+      return res.status(400).json({ message: "Title, Date, and scheduledByUserId are required." });
+    }
+
+    const newAppointment = new Appointment({ ...req.body });
+    await newAppointment.save();
+    res.status(201).json({ message: "Appointment created successfully", appointment: newAppointment });
+  } catch (error) {
+    console.error("❌ Error creating appointment:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+
 // ✅ API to Update an Appointment (Handles Soft Delete)
 router.put("/:id", verifyToken, async (req, res) => {
   try {
