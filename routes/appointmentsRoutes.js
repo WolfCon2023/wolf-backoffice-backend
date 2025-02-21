@@ -27,6 +27,26 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ API to Fetch a Single Appointment by ID
+router.get("/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("🔍 Fetching appointment with ID:", id);
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      console.log("❌ Appointment Not Found:", id);
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    console.log("✅ Appointment Found:", appointment);
+    res.status(200).json(appointment);
+  } catch (error) {
+    console.error("❌ Error fetching appointment:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 // ✅ API to Create an Appointment
 router.post("/", verifyToken, async (req, res) => {
   try {
