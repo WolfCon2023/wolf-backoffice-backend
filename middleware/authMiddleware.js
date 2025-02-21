@@ -1,7 +1,10 @@
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
+  console.log(`🔍 ${req.method} Request to ${req.originalUrl}`);
+  
   const authHeader = req.header("Authorization");
+  console.log("🔍 Received Authorization Header:", authHeader);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log("❌ No Token Provided");
@@ -9,11 +12,11 @@ const verifyToken = (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
-  console.log("🔍 Received Token:", token);
+  console.log("🔍 Extracted Token:", token);
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(`✅ Token Verified for User: ${JSON.stringify(req.user)}`);
+    console.log(`✅ Token Verified for User: ${JSON.stringify(verified)}`);
     req.user = verified;
     next();
   } catch (err) {
