@@ -65,7 +65,7 @@ router.get("/:id", verifyToken, async (req, res) => {
     }
 
     console.log("✅ Appointment Found:", appointment);
-    res.status(200).json(appointment);
+    res.status(200).json({ appointments: fetchedAppointments, totalPages });
   } catch (error) {
     console.error("❌ Error fetching appointment:", error);
     res.status(500).json({ message: "Server error", error: error.message });

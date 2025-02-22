@@ -25,31 +25,28 @@ mongoose
     process.exit(1);
   });
 
-// ✅ Register API Routes
+// ✅ Register API Routes BEFORE Serving Frontend
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
 
+// ✅ Test API Route
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
 });
 
-// ✅ Serve frontend if build exists
+// ✅ Serve React Frontend ONLY for non-API requests
 const buildPath = path.join(__dirname, "build");
 
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
   app.get("*", (req, res) => {
-    const indexPath = path.join(buildPath, "index.html");
-    console.log(`✅ Serving frontend: ${indexPath}`);
-
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error("❌ Error serving index.html:", err.message);
-        res.status(500).send("Error loading frontend.");
-      }
-    });
+    if (req.originalUrl.startsWith("/api")) {
+      return res.status(404).json({ message: "API route not found" });
+    }
+    console.log(`✅ Serving frontend: ${buildPath}/index.html`);
+    res.sendFile(path.join(buildPath, "index.html"));
   });
 } else {
   console.warn("⚠️ Frontend build folder not found. Skipping frontend serving.");
