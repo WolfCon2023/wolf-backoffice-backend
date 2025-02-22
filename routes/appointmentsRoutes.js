@@ -5,33 +5,58 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// ✅ API to Fetch All Appointments with Pagination
-router.get("/", verifyToken, async (req, res) => {
+// ✅ Ensure `/history` is defined **before** `/:id` routes
+router.get("/history", verifyToken, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const skip = (page - 1) * limit;
+    const { startDate, endDate } = req.query;
 
-    const appointments = await Appointment.find()
-      .sort({ date: -1 }) // Sort by newest first
-      .skip(skip)
-      .limit(limit);
+    if (!startDate || !endDate) {
+      console.log("❌ Missing startDate or endDate");
+      return res.status(400).json({ message: "Start date and end date are required." });
+    }
 
-    const totalAppointments = await Appointment.countDocuments();
-    const totalPages = Math.ceil(totalAppointments / limit);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-    res.status(200).json({ appointments, totalPages });
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      console.log(`❌ Invalid date format: startDate=${startDate}, endDate=${endDate}`);
+      return res.status(400).json({ message: "Invalid date format provided." });
+    }
+
+    console.log(`🔍 Fetching appointments between ${start.toISOString()} and ${end.toISOString()}`);
+
+    if (mongoose.connection.readyState !== 1) {
+      console.error("❌ MongoDB is not connected!");
+      return res.status(500).json({ message: "Database connection issue" });
+    }
+
+    // ✅ Check if "history" is being mistaken for an ObjectId
+    console.log("🔍 Params received:", req.params);
+    console.log("🔍 Query received:", req.query);
+
+    const historicalAppointments = await Appointment.find({
+      date: { $gte: start, $lte: end },
+    }).sort({ date: -1 });
+
+    console.log("✅ Fetched appointments:", historicalAppointments);
+    res.status(200).json(historicalAppointments);
   } catch (error) {
-    console.error("❌ Error fetching appointments:", error);
+    console.error("❌ Error querying historical appointments:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-// ✅ API to Fetch a Single Appointment by ID
+
+// ✅ Ensure this is BELOW `/history`, otherwise "history" is treated as an ID
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log("🔍 Fetching appointment with ID:", id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid appointment ID format." });
+    }
 
     const appointment = await Appointment.findById(id);
     if (!appointment) {
@@ -43,51 +68,6 @@ router.get("/:id", verifyToken, async (req, res) => {
     res.status(200).json(appointment);
   } catch (error) {
     console.error("❌ Error fetching appointment:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
-
-// ✅ API to Create an Appointment
-router.post("/", verifyToken, async (req, res) => {
-  try {
-    console.log("🔍 Received Appointment Data:", req.body); // Debugging Log
-
-    // Validate required fields
-    const { title, date, scheduledByUserId } = req.body;
-    if (!title || !date || !scheduledByUserId) {
-      return res.status(400).json({ message: "Title, Date, and scheduledByUserId are required." });
-    }
-
-    const newAppointment = new Appointment({ ...req.body });
-    await newAppointment.save();
-    res.status(201).json({ message: "Appointment created successfully", appointment: newAppointment });
-  } catch (error) {
-    console.error("❌ Error creating appointment:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
-
-
-// ✅ API to Update an Appointment (Handles Soft Delete)
-router.put("/:id", verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updatedData = req.body;
-
-    console.log("🔍 Update Request Received for ID:", id, "Data:", updatedData);
-
-    // ✅ Allow updating the `toBeDeleted` flag
-    const updatedAppointment = await Appointment.findByIdAndUpdate(id, updatedData, { new: true });
-
-    if (!updatedAppointment) {
-      console.log("❌ Appointment Not Found:", id);
-      return res.status(404).json({ message: "Appointment not found" });
-    }
-
-    console.log("✅ Appointment Updated Successfully:", updatedAppointment);
-    res.json({ message: "Appointment updated successfully", appointment: updatedAppointment });
-  } catch (error) {
-    console.error("❌ Error updating appointment:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
