@@ -5,7 +5,34 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// POST route to create a new appointment
+// NEW: GET route for historical appointments
+router.get("/history", verifyToken, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      console.log("❌ Missing startDate or endDate");
+      return res.status(400).json({ message: "Start date and end date are required." });
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      console.log(`❌ Invalid date format: startDate=${startDate}, endDate=${endDate}`);
+      return res.status(400).json({ message: "Invalid date format provided." });
+    }
+    console.log(`🔍 Fetching historical appointments between ${start.toISOString()} and ${end.toISOString()}`);
+    const appointments = await Appointment.find({
+      date: { $gte: start, $lte: end },
+      toBeDeleted: { $ne: true }
+    }).sort({ date: -1 });
+    console.log("✅ Fetched historical appointments:", appointments);
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.error("❌ Error querying historical appointments:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Existing POST route to create an appointment
 router.post("/", verifyToken, async (req, res) => {
   try {
     const newAppointment = new Appointment(req.body);
@@ -18,36 +45,25 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// GET route to retrieve appointments within a date range (excluding those marked for deletion)
+// Existing GET route for appointments (requires query parameters)
 router.get("/", verifyToken, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-
     if (!startDate || !endDate) {
       console.log("❌ Missing startDate or endDate");
       return res.status(400).json({ message: "Start date and end date are required." });
     }
-
     const start = new Date(startDate);
     const end = new Date(endDate);
-
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       console.log(`❌ Invalid date format: startDate=${startDate}, endDate=${endDate}`);
       return res.status(400).json({ message: "Invalid date format provided." });
     }
-
     console.log(`🔍 Fetching appointments between ${start.toISOString()} and ${end.toISOString()}`);
-
-    if (mongoose.connection.readyState !== 1) {
-      console.error("❌ MongoDB is not connected!");
-      return res.status(500).json({ message: "Database connection issue" });
-    }
-
     const appointments = await Appointment.find({
       date: { $gte: start, $lte: end },
       toBeDeleted: { $ne: true }
     }).sort({ date: -1 });
-
     console.log("✅ Fetched appointments:", appointments);
     res.status(200).json(appointments);
   } catch (error) {
@@ -56,23 +72,20 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// GET route to fetch a single appointment by ID
+// GET route for a single appointment by ID
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log("🔍 Fetching appointment with ID:", id);
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       console.log("❌ Invalid ObjectId format");
       return res.status(400).json({ message: "Invalid appointment ID format." });
     }
-
     const appointment = await Appointment.findById(id);
     if (!appointment) {
       console.log("❌ Appointment Not Found:", id);
       return res.status(404).json({ message: "Appointment not found" });
     }
-
     console.log("✅ Appointment Found:", appointment);
     res.status(200).json(appointment);
   } catch (error) {
