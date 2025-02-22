@@ -5,8 +5,21 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// ✅ Ensure `/history` is defined **before** `/:id` routes
-router.get("/history", verifyToken, async (req, res) => {
+// POST route to create a new appointment
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    const newAppointment = new Appointment(req.body);
+    const savedAppointment = await newAppointment.save();
+    console.log("✅ Appointment Created:", savedAppointment);
+    res.status(201).json(savedAppointment);
+  } catch (error) {
+    console.error("❌ Error creating appointment:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// GET route to retrieve appointments within a date range (excluding those marked for deletion)
+router.get("/", verifyToken, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -30,24 +43,20 @@ router.get("/history", verifyToken, async (req, res) => {
       return res.status(500).json({ message: "Database connection issue" });
     }
 
-    // ✅ Check if "history" is being mistaken for an ObjectId
-    console.log("🔍 Params received:", req.params);
-    console.log("🔍 Query received:", req.query);
-
-    const historicalAppointments = await Appointment.find({
+    const appointments = await Appointment.find({
       date: { $gte: start, $lte: end },
+      toBeDeleted: { $ne: true }
     }).sort({ date: -1 });
 
-    console.log("✅ Fetched appointments:", historicalAppointments);
-    res.status(200).json(historicalAppointments);
+    console.log("✅ Fetched appointments:", appointments);
+    res.status(200).json(appointments);
   } catch (error) {
-    console.error("❌ Error querying historical appointments:", error);
+    console.error("❌ Error querying appointments:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-
-// ✅ Ensure this is BELOW `/history`, otherwise "history" is treated as an ID
+// GET route to fetch a single appointment by ID
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,7 +74,7 @@ router.get("/:id", verifyToken, async (req, res) => {
     }
 
     console.log("✅ Appointment Found:", appointment);
-    res.status(200).json({ appointments: fetchedAppointments, totalPages });
+    res.status(200).json(appointment);
   } catch (error) {
     console.error("❌ Error fetching appointment:", error);
     res.status(500).json({ message: "Server error", error: error.message });

@@ -8,7 +8,7 @@ const path = require("path");
 const fs = require("fs");
 
 const authRoutes = require("./routes/authRoutes");
-const appointmentRoutes = require("./routes/appointmentsRoutes");
+const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Ensure the file name matches exactly
 const userRoutes = require("./routes/users");
 
 const app = express();
@@ -25,7 +25,7 @@ mongoose
     process.exit(1);
   });
 
-// ✅ Register API Routes FIRST
+// ✅ PRIORITIZE API ROUTES - Ensures Express processes these before frontend routes
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
@@ -35,23 +35,33 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
 });
 
-// ✅ Handle unknown API routes explicitly (prevents frontend from intercepting API calls)
+// ✅ Handle unknown API routes explicitly
 app.all("/api/*", (req, res) => {
+  console.error(`❌ API Route Not Found: ${req.originalUrl}`);
   res.status(404).json({ message: "API route not found" });
 });
 
-// ✅ Serve React Frontend **ONLY for non-API requests**
-const buildPath = path.join(__dirname, "build");
+// ✅ Log all available API routes to debug missing endpoints
+console.log("✅ Available API Routes:");
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(`➡️ ${middleware.route.path}`);
+  } else if (middleware.name === "router") {
+    middleware.handle.stack.forEach((subMiddleware) => {
+      if (subMiddleware.route) {
+        console.log(`➡️ ${subMiddleware.route.path}`);
+      }
+    });
+  }
+});
 
+// ✅ Serve Frontend (Only if the request is NOT an API request)
+const buildPath = path.join(__dirname, "build");
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
-  app.get("*", (req, res) => {
-    if (req.originalUrl.startsWith("/api/")) {
-      console.warn(`🚨 Prevented frontend from intercepting API call: ${req.originalUrl}`);
-      return res.status(404).json({ message: "API route not found" });
-    }
-    console.log(`✅ Serving frontend: ${buildPath}/index.html`);
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    console.log(`✅ Serving frontend for: ${req.originalUrl}`);
     res.sendFile(path.join(buildPath, "index.html"));
   });
 } else {
