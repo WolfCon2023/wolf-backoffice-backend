@@ -1,5 +1,5 @@
 require("dotenv").config();
-console.log("🔍 Loaded JWT_SECRET:", process.env.JWT_SECRET ? "Exists" : "MISSING"); // Debugging log
+console.log("🔍 Loaded JWT_SECRET:", process.env.JWT_SECRET ? "Exists" : "MISSING");
 
 const express = require("express");
 const cors = require("cors");
@@ -25,7 +25,7 @@ mongoose
     process.exit(1);
   });
 
-// ✅ Register API Routes BEFORE Serving Frontend
+// ✅ Register API Routes FIRST
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
@@ -35,14 +35,20 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
 });
 
-// ✅ Serve React Frontend ONLY for non-API requests
+// ✅ Handle unknown API routes explicitly (prevents frontend from intercepting API calls)
+app.all("/api/*", (req, res) => {
+  res.status(404).json({ message: "API route not found" });
+});
+
+// ✅ Serve React Frontend **ONLY for non-API requests**
 const buildPath = path.join(__dirname, "build");
 
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
   app.get("*", (req, res) => {
-    if (req.originalUrl.startsWith("/api")) {
+    if (req.originalUrl.startsWith("/api/")) {
+      console.warn(`🚨 Prevented frontend from intercepting API call: ${req.originalUrl}`);
       return res.status(404).json({ message: "API route not found" });
     }
     console.log(`✅ Serving frontend: ${buildPath}/index.html`);
