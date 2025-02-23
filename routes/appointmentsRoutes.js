@@ -94,4 +94,30 @@ router.get("/:id", verifyToken, async (req, res) => {
   }
 });
 
+// NEW: DELETE route for an appointment by ID
+// Instead of physically deleting the record, this route sets the "toBeDeleted" flag to true.
+router.delete("/:id", verifyToken, async (req, res) => {
+  console.log("DELETE route reached for appointment", req.params.id);
+  try {
+    const { id } = req.params;
+    console.log("🔍 Marking appointment as deleted with ID:", id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid appointment ID format." });
+    }
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      console.log("❌ Appointment Not Found:", id);
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    appointment.toBeDeleted = true;
+    await appointment.save();
+    console.log("✅ Appointment marked as deleted:", appointment);
+    res.status(200).json({ message: "Appointment marked as deleted" });
+  } catch (error) {
+    console.error("❌ Error marking appointment as deleted:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 module.exports = router;
