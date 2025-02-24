@@ -94,6 +94,36 @@ router.get("/:id", verifyToken, async (req, res) => {
   }
 });
 
+// PUT route to update an appointment by ID
+router.put("/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("🔄 Updating appointment with ID:", id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid appointment ID format." });
+    }
+
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedAppointment) {
+      console.log("❌ Appointment Not Found:", id);
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    console.log("✅ Appointment Updated:", updatedAppointment);
+    res.status(200).json(updatedAppointment);
+  } catch (error) {
+    console.error("❌ Error updating appointment:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 // NEW: DELETE route for an appointment by ID
 // Instead of physically deleting the record, this route sets the "toBeDeleted" flag to true.
 router.delete("/:id", verifyToken, async (req, res) => {
