@@ -19,28 +19,40 @@ router.get("/", verifyToken, async (req, res) => {
         res.json(dbCustomers);
     } catch (error) {
         console.error("❌ Error fetching customers:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
-// ✅ SEARCH customers by name, email, or product line (Protected)
+// ✅ SEARCH customers by field and query (Protected)
 router.get("/search", verifyToken, async (req, res) => {
-    const { query } = req.query;
+    const { field, query } = req.query;
 
-    if (!query) {
-        return res.status(400).json({ message: "Search query is required" });
+    if (!field || !query) {
+        return res.status(400).json({ message: "Search field and query are required" });
     }
 
     try {
-        console.log(`📡 Searching customers with query: ${query}`);
-        const searchResults = await Customer.find({
-            $or: [
-                { firstName: { $regex: query, $options: "i" } },
-                { lastName: { $regex: query, $options: "i" } },
-                { businessEmail: { $regex: query, $options: "i" } },
-                { productLines: { $regex: query, $options: "i" } }
-            ]
-        });
+        console.log(`📡 Searching customers by ${field} with query: ${query}`);
+        
+        let searchQuery = {};
+        
+        // Handle different search fields
+        switch (field) {
+            case "firstName":
+            case "lastName":
+            case "businessEmail":
+            case "phoneNumber":
+            case "productLines":
+                searchQuery[field] = { $regex: query, $options: "i" };
+                break;
+            case "highValue":
+                searchQuery.highValue = query.toLowerCase() === "true";
+                break;
+            default:
+                return res.status(400).json({ message: "Invalid search field" });
+        }
+
+        const searchResults = await Customer.find(searchQuery);
 
         if (!searchResults.length) {
             console.log("⚠️ No matching customers found.");
@@ -50,7 +62,7 @@ router.get("/search", verifyToken, async (req, res) => {
         res.json(searchResults);
     } catch (error) {
         console.error("❌ Error searching customers:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
@@ -68,7 +80,7 @@ router.get("/:id", verifyToken, async (req, res) => {
         res.json(customer);
     } catch (error) {
         console.error("❌ Error fetching customer:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
@@ -77,7 +89,7 @@ router.post("/", verifyToken, async (req, res) => {
     console.log("📡 Received POST request at /api/customers");
     console.log("📡 Request Body:", req.body);
 
-    const { firstName, lastName, businessEmail, phoneNumber, productLines } = req.body;
+    const { firstName, lastName, businessEmail, phoneNumber, productLines, highValue } = req.body;
     if (!firstName || !lastName || !businessEmail || !phoneNumber || !productLines) {
         return res.status(400).json({ message: "All fields are required" });
     }
@@ -90,7 +102,8 @@ router.post("/", verifyToken, async (req, res) => {
             lastName,
             businessEmail,
             phoneNumber,
-            productLines
+            productLines,
+            highValue: highValue || false
         });
 
         await newCustomer.save();
@@ -98,19 +111,19 @@ router.post("/", verifyToken, async (req, res) => {
         res.status(201).json(newCustomer);
     } catch (error) {
         console.error("❌ Error adding customer:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
 // ✅ UPDATE a customer (Protected)
 router.put("/:id", verifyToken, async (req, res) => {
-    const { firstName, lastName, businessEmail, phoneNumber, productLines } = req.body;
+    const { firstName, lastName, businessEmail, phoneNumber, productLines, highValue } = req.body;
 
     try {
         console.log(`📡 Updating customer ID: ${req.params.id}`);
         const updatedCustomer = await Customer.findByIdAndUpdate(
             req.params.id,
-            { firstName, lastName, businessEmail, phoneNumber, productLines },
+            { firstName, lastName, businessEmail, phoneNumber, productLines, highValue },
             { new: true, runValidators: true }
         );
 
@@ -123,7 +136,7 @@ router.put("/:id", verifyToken, async (req, res) => {
         res.json(updatedCustomer);
     } catch (error) {
         console.error("❌ Error updating customer:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
@@ -142,7 +155,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
         res.json({ message: "Customer deleted successfully" });
     } catch (error) {
         console.error("❌ Error deleting customer:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 

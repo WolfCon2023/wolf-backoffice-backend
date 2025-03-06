@@ -8,8 +8,9 @@ const customerSchema = new mongoose.Schema(
     phoneNumber: { type: String, required: true },
     productLines: { type: String, required: true },
     notes: { type: String, default: "" },
-    lastInteraction: { type: Date, default: Date.now }, // Track last contact
-    assignedRep: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // Sales rep assigned
+    lastInteraction: { type: Date, default: Date.now },
+    assignedRep: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    highValue: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
