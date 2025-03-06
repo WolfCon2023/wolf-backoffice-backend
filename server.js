@@ -10,6 +10,7 @@ const fs = require("fs");
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Ensure the file name matches exactly
 const userRoutes = require("./routes/users");
+const customerRoutes = require("./routes/customers");
 
 const app = express();
 app.use(cors());
@@ -29,6 +30,9 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/customers", customerRoutes);
+
+console.log("✅ Registered Route: /api/customers");
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
@@ -67,6 +71,22 @@ if (fs.existsSync(buildPath)) {
 } else {
   console.warn("⚠️ Frontend build folder not found. Skipping frontend serving.");
 }
+
+// Debugging: Show all available routes
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(`➡️ Registered API Route: ${middleware.route.path}`);
+  } else if (middleware.name === "router") {
+    middleware.handle.stack.forEach((subMiddleware) => {
+      if (subMiddleware.route) {
+        console.log(`➡️ Registered API Route: ${subMiddleware.route.path}`);
+      }
+    });
+  }
+});
+
+
+
 
 // ✅ Start the backend server
 const port = process.env.PORT || 8080;
