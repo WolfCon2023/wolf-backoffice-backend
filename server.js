@@ -11,6 +11,9 @@ const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Ensure the file name matches exactly
 const userRoutes = require("./routes/users");
 const customerRoutes = require("./routes/customers");
+const projectRoutes = require("./routes/projects");
+const teamRoutes = require("./routes/teams");
+const sprintRoutes = require("./routes/sprints");
 
 const app = express();
 app.use(cors());
@@ -31,8 +34,14 @@ app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/sprints", sprintRoutes);
 
 console.log("✅ Registered Route: /api/customers");
+console.log("✅ Registered Route: /api/projects");
+console.log("✅ Registered Route: /api/teams");
+console.log("✅ Registered Route: /api/sprints");
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
@@ -84,9 +93,6 @@ app._router.stack.forEach((middleware) => {
     });
   }
 });
-
-
-
 
 // ✅ Start the backend server
 const port = process.env.PORT || 8080;
