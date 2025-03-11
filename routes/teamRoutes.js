@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Team = require("../models/Team");
-const { authenticateToken } = require("../middleware/auth");
+const authenticateToken = require("../middleware/authMiddleware"); // ✅ Fixed authentication import
 
 const router = express.Router();
 
@@ -9,12 +9,12 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // GET all teams
-router.get("/test/teams", async (req, res) => {
+router.get("/test/teams", authenticateToken, async (req, res) => {
   try {
     console.log("📡 Fetching all teams...");
     const teams = await Team.find({ isDeleted: { $ne: true } })
-      .populate('members.user', 'name email')
-      .populate('projects', 'name key');
+      .populate("members.user", "name email")
+      .populate("projects", "name key");
     console.log(`✅ Found ${teams.length} teams`);
     res.json(teams);
   } catch (error) {
@@ -24,12 +24,12 @@ router.get("/test/teams", async (req, res) => {
 });
 
 // GET team by ID
-router.get("/test/teams/:id", async (req, res) => {
+router.get("/test/teams/:id", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Fetching team ${req.params.id}...`);
     const team = await Team.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
-      .populate('members.user', 'name email')
-      .populate('projects', 'name key status');
+      .populate("members.user", "name email")
+      .populate("projects", "name key status");
 
     if (!team) {
       console.log("❌ Team not found");
@@ -45,13 +45,13 @@ router.get("/test/teams/:id", async (req, res) => {
 });
 
 // POST create new team
-router.post("/test/teams", async (req, res) => {
+router.post("/test/teams", authenticateToken, async (req, res) => {
   try {
     console.log("📡 Creating new team:", req.body);
     const team = new Team({
       ...req.body,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
     await team.save();
     console.log("✅ Team created:", team.name);
@@ -63,7 +63,7 @@ router.post("/test/teams", async (req, res) => {
 });
 
 // PUT update team
-router.put("/test/teams/:id", async (req, res) => {
+router.put("/test/teams/:id", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Updating team ${req.params.id}:`, req.body);
     const team = await Team.findOneAndUpdate(
@@ -71,8 +71,8 @@ router.put("/test/teams/:id", async (req, res) => {
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     )
-    .populate('members.user', 'name email')
-    .populate('projects', 'name key status');
+      .populate("members.user", "name email")
+      .populate("projects", "name key status");
 
     if (!team) {
       console.log("❌ Team not found");
@@ -88,7 +88,7 @@ router.put("/test/teams/:id", async (req, res) => {
 });
 
 // DELETE team (soft delete)
-router.delete("/test/teams/:id", async (req, res) => {
+router.delete("/test/teams/:id", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Deleting team ${req.params.id}`);
     const team = await Team.findOneAndUpdate(
@@ -111,11 +111,13 @@ router.delete("/test/teams/:id", async (req, res) => {
 });
 
 // GET team members
-router.get("/test/teams/:id/members", async (req, res) => {
+router.get("/test/teams/:id/members", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Fetching members for team ${req.params.id}`);
-    const team = await Team.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
-      .populate('members.user', 'name email');
+    const team = await Team.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).populate(
+      "members.user",
+      "name email"
+    );
 
     if (!team) {
       console.log("❌ Team not found");
@@ -131,23 +133,23 @@ router.get("/test/teams/:id/members", async (req, res) => {
 });
 
 // POST add team member
-router.post("/test/teams/:id/members", async (req, res) => {
+router.post("/test/teams/:id/members", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Adding member to team ${req.params.id}:`, req.body);
     const team = await Team.findOneAndUpdate(
       { _id: req.params.id, isDeleted: { $ne: true } },
-      { 
-        $push: { 
+      {
+        $push: {
           members: {
             user: req.body.userId,
             role: req.body.role,
-            joinedAt: new Date()
-          }
+            joinedAt: new Date(),
+          },
         },
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { new: true }
-    ).populate('members.user', 'name email');
+    ).populate("members.user", "name email");
 
     if (!team) {
       console.log("❌ Team not found");
@@ -163,14 +165,14 @@ router.post("/test/teams/:id/members", async (req, res) => {
 });
 
 // DELETE remove team member
-router.delete("/test/teams/:id/members/:userId", async (req, res) => {
+router.delete("/test/teams/:id/members/:userId", authenticateToken, async (req, res) => {
   try {
     console.log(`📡 Removing member ${req.params.userId} from team ${req.params.id}`);
     const team = await Team.findOneAndUpdate(
       { _id: req.params.id, isDeleted: { $ne: true } },
       {
         $pull: { members: { user: req.params.userId } },
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { new: true }
     );
@@ -188,43 +190,4 @@ router.delete("/test/teams/:id/members/:userId", async (req, res) => {
   }
 });
 
-// GET team metrics
-router.get("/test/teams/:id/metrics", async (req, res) => {
-  try {
-    console.log(`📡 Fetching metrics for team ${req.params.id}`);
-    const team = await Team.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-
-    if (!team) {
-      console.log("❌ Team not found");
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    console.log("✅ Team metrics fetched");
-    res.json(team.metrics);
-  } catch (error) {
-    console.error("❌ Error fetching team metrics:", error);
-    res.status(500).json({ message: "Error fetching team metrics", error: error.message });
-  }
-});
-
-// GET team velocity
-router.get("/test/teams/:id/velocity", async (req, res) => {
-  try {
-    console.log(`📡 Fetching velocity for team ${req.params.id}`);
-    const team = await Team.findById(req.params.id);
-    if (!team) {
-      console.log("❌ Team not found");
-      return res.status(404).json({ message: "Team not found" });
-    }
-    console.log("✅ Team velocity fetched");
-    res.json({
-      averageVelocity: team.metrics.averageVelocity,
-      sprintCompletionRate: team.metrics.sprintCompletionRate
-    });
-  } catch (error) {
-    console.error("❌ Error fetching team velocity:", error);
-    res.status(500).json({ message: "Error fetching team velocity", error: error.message });
-  }
-});
-
-module.exports = router; 
+module.exports = router;

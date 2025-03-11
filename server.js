@@ -11,9 +11,9 @@ const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentsRoutes"); // ✅ Ensure the file name matches exactly
 const userRoutes = require("./routes/users");
 const customerRoutes = require("./routes/customers");
-const projectRoutes = require("./routes/projects");
-const teamRoutes = require("./routes/teams");
-const sprintRoutes = require("./routes/sprints");
+const projectRoutes = require("./routes/projectRoutes");
+const teamRoutes = require("./routes/teamRoutes");
+const sprintRoutes = require("./routes/sprintRoutes");
 
 const app = express();
 app.use(cors());
