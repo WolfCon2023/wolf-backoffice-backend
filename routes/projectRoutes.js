@@ -10,10 +10,10 @@ const router = express.Router();
 console.log("✅ Projects API Route Loaded");
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use(verifyToken);
 
 // SEED - Create test project (temporary route for testing)
-router.post("/seed", authenticateToken, async (req, res) => {
+router.post("/seed", verifyToken, async (req, res) => {
   try {
     console.log("📡 Seeding test project...");
 
@@ -46,7 +46,7 @@ router.post("/seed", authenticateToken, async (req, res) => {
 });
 
 // GET all projects
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     console.log("📡 Fetching all projects...");
     const projects = await Project.find({ isDeleted: { $ne: true } })
@@ -67,7 +67,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // GET project by ID
-router.get("/:id", authenticateToken, async (req, res) => {
+router.get("/:id", verifyToken, async (req, res) => {
   try {
     console.log(`📡 Fetching project ${req.params.id}...`);
     const project = await Project.findById(req.params.id)
@@ -88,7 +88,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
 });
 
 // POST create new project
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   try {
     console.log("📡 Creating new project - Request Body:", req.body);
 
@@ -132,7 +132,7 @@ router.post("/", authenticateToken, async (req, res) => {
 });
 
 // PUT update project
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id", verifyToken, async (req, res) => {
   try {
     console.log(`📡 Updating project ${req.params.id}:`, req.body);
     const project = await Project.findByIdAndUpdate(
@@ -155,7 +155,7 @@ router.put("/:id", authenticateToken, async (req, res) => {
 });
 
 // DELETE project (soft delete)
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     console.log(`📡 Deleting project ${req.params.id}`);
     const project = await Project.findByIdAndUpdate(
@@ -178,7 +178,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 });
 
 // GET project metrics
-router.get("/:id/metrics", authenticateToken, async (req, res) => {
+router.get("/:id/metrics", verifyToken, async (req, res) => {
   try {
     console.log(`📡 Fetching metrics for project ${req.params.id}`);
     const project = await Project.findById(req.params.id)
