@@ -38,10 +38,18 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
 
-console.log("✅ Registered Route: /api/customers");
+app.use((req, res, next) => {
+  console.log(`📡 Incoming Request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
 console.log("✅ Registered Route: /api/sprints");
+console.log("✅ Registered Route: /api/appointments");
+console.log("✅ Registered Route: /api/users");
+console.log("✅ Registered Route: /api/customers");
+
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {

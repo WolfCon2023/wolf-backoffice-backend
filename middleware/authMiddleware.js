@@ -7,11 +7,17 @@ const verifyToken = (req, res, next) => {
   console.log("🔍 Received Authorization Header:", authHeader);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("❌ No Token Provided");
+    console.log("❌ No Token Provided or Incorrect Format");
     return res.status(403).json({ message: "Access Denied. No Token Provided" });
   }
 
   const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    console.log("❌ Extracted Token is Undefined");
+    return res.status(403).json({ message: "Access Denied. No Valid Token Found" });
+  }
+
   console.log("🔍 Extracted Token:", token);
 
   try {
