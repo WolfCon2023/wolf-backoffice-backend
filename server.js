@@ -14,6 +14,9 @@ const customerRoutes = require("./routes/customers");
 const projectRoutes = require("./routes/projectRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
+const storyRoutes = require("./routes/storyRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const defectRoutes = require("./routes/defectRoutes");
 
 const app = express();
 
@@ -44,10 +47,16 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
+app.use("/api/stories", storyRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/defects", defectRoutes);
 
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
 console.log("✅ Registered Route: /api/sprints");
+console.log("✅ Registered Route: /api/stories");
+console.log("✅ Registered Route: /api/tasks");
+console.log("✅ Registered Route: /api/defects");
 console.log("✅ Registered Route: /api/appointments");
 console.log("✅ Registered Route: /api/users");
 console.log("✅ Registered Route: /api/customers");
@@ -55,20 +64,6 @@ console.log("✅ Registered Route: /api/customers");
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
-});
-
-// ✅ Log all available API routes to debug missing endpoints
-console.log("✅ Available API Routes:");
-app._router.stack.forEach((middleware) => {
-  if (middleware.route) {
-    console.log(`➡️ ${middleware.route.path}`);
-  } else if (middleware.name === "router") {
-    middleware.handle.stack.forEach((subMiddleware) => {
-      if (subMiddleware.route) {
-        console.log(`➡️ ${subMiddleware.route.path}`);
-      }
-    });
-  }
 });
 
 // ✅ Serve Frontend (Only if the request is NOT an API request)
