@@ -13,34 +13,137 @@ const generateToken = (user) => {
 
 // ✅ User Registration
 exports.registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const {
+    username,
+    email,
+    password,
+    firstName,
+    lastName,
+    contactNumber,
+    role,
+    department,
+    title,
+    employeeId
+  } = req.body;
+
+  console.log("📥 Registration request received:", {
+    username,
+    email,
+    firstName,
+    lastName,
+    contactNumber,
+    role,
+    department,
+    title,
+    employeeId
+  });
 
   try {
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    if (req.headers['x-admin-creation'] === 'true') {
+      if (!username || !firstName || !lastName) {
+        return res.status(400).json({
+          message: "Username, first name, and last name are required for admin user creation"
+        });
+      }
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log("⚠️ Email already registered:", email);
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // ✅ Hash password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      console.log("⚠️ Username already taken:", username);
+      return res.status(400).json({ message: "Username already taken" });
+    }
 
-    const newUser = new User({ username, email, password: hashedPassword });
-    await newUser.save();
+    // 👷 Prepare user data
+    const userData = {
+      username,
+      email,
+      password, // Raw password (schema handles hashing)
+      firstName,
+      lastName,
+      contactNumber,
+      role: role || 'Developer',
+      department: department || 'Information Technology',
+      title: title || role || 'Developer'
+    };
 
-    // Generate a new token upon registration
+    if (employeeId) {
+      userData.employeeId = employeeId;
+    }
+
+    console.log("🛠 Creating user with data:", {
+      ...userData,
+      password: "[REDACTED]"
+    });
+
+    const newUser = new User(userData);
+
+    try {
+      await newUser.save();
+    } catch (saveError) {
+      console.error("🛑 Mongoose Save Error - Full Dump:", JSON.stringify(saveError, Object.getOwnPropertyNames(saveError), 2));
+      throw saveError;
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error("❌ JWT_SECRET is not defined in environment variables.");
+      return res.status(500).json({ message: "Server misconfiguration: JWT secret is missing" });
+    }
+
     const token = generateToken(newUser);
-    res.status(201).json({
+
+    const response = {
       message: "User registered successfully",
       token,
-      user: { id: newUser._id, username: newUser.username, email: newUser.email }
-    });
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        contactNumber: newUser.contactNumber,
+        employeeId: newUser.employeeId,
+        role: newUser.role,
+        department: newUser.department,
+        title: newUser.title
+      }
+    };
+
+    console.log("✅ Registration successful:", response);
+    res.status(201).json(response);
+
   } catch (error) {
-    console.error("Registration Error:", error);
-    res.status(500).json({ message: "Server error" });
+    const validationErrors = error?.errors
+      ? Object.fromEntries(
+          Object.entries(error.errors).map(([key, val]) => [key, val.message])
+        )
+      : null;
+
+    console.error("🚨 Registration Error:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      validationErrors,
+      cause: error.cause || null,
+      jwtSecretPresent: !!process.env.JWT_SECRET
+    });
+
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      name: error.name,
+      stack: error.stack,
+      validationErrors
+    });
   }
 };
 
@@ -58,21 +161,31 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // ✅ Use bcrypt to compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Generate a new token each time a user logs in
     const token = generateToken(user);
+
     res.json({
       message: "Login successful",
       token,
-      user: { id: user._id, username: user.username, email: user.email }
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
     });
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("🚨 Login Error:", {
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      stack: error.stack
+    });
   }
 };
