@@ -138,19 +138,23 @@ exports.updateStory = async (req, res) => {
 exports.deleteStory = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`📡 Deleting story ${id}`);
+    console.log(`📡 Marking story ${id} as toBeDeleted`);
     
-    const story = await Story.findByIdAndDelete(id);
+    const story = await Story.findByIdAndUpdate(
+      id,
+      { toBeDeleted: true, updatedAt: Date.now() },
+      { new: true }
+    );
 
     if (!story) {
       console.log(`⚠️ Story ${id} not found`);
       return res.status(404).json({ message: "Story not found" });
     }
 
-    console.log(`✅ Story deleted: ${story.title}`);
-    res.json({ message: "Story deleted successfully" });
+    console.log(`✅ Story marked as deleted: ${story.title}`);
+    res.json({ message: "Story marked for deletion successfully" });
   } catch (error) {
-    console.error("❌ Error deleting story:", error);
+    console.error("❌ Error marking story as deleted:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 }; 

@@ -12,13 +12,12 @@ const verifyToken = (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
+  console.log("🔍 Extracted Token:", token ? "Token exists" : "No token found");
 
   if (!token) {
     console.log("❌ Extracted Token is Undefined");
     return res.status(403).json({ message: "Access Denied. No Valid Token Found" });
   }
-
-  console.log("🔍 Extracted Token:", token);
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);

@@ -14,9 +14,6 @@ const customerRoutes = require("./routes/customers");
 const projectRoutes = require("./routes/projectRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
-const storyRoutes = require("./routes/storyRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const defectRoutes = require("./routes/defectRoutes");
 
 const app = express();
 
@@ -47,16 +44,10 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
-app.use("/api/stories", storyRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/defects", defectRoutes);
 
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
 console.log("✅ Registered Route: /api/sprints");
-console.log("✅ Registered Route: /api/stories");
-console.log("✅ Registered Route: /api/tasks");
-console.log("✅ Registered Route: /api/defects");
 console.log("✅ Registered Route: /api/appointments");
 console.log("✅ Registered Route: /api/users");
 console.log("✅ Registered Route: /api/customers");
@@ -64,6 +55,30 @@ console.log("✅ Registered Route: /api/customers");
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
+});
+
+// ✅ Log all available API routes to debug missing endpoints
+console.log("✅ Available API Routes:");
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(`➡️ ${middleware.route.path}`);
+  } else if (middleware.name === "router") {
+    // Get the base path from the router's regexp
+    const basePath = middleware.regexp.toString()
+      .replace(/^\/\^\\\//, '')  // Remove leading /^\
+      .replace(/\\\//, '/')      // Replace escaped slash with regular slash
+      .replace(/\/\$/, '')       // Remove trailing /$
+      .replace(/\\\?/, '?')      // Replace escaped question mark
+      .replace(/\/i$/, '')       // Remove trailing /i
+      .replace(/\\\/\?\(\?=\\\/\\|\$\)/, ''); // Remove optional slash pattern
+    
+    middleware.handle.stack.forEach((subMiddleware) => {
+      if (subMiddleware.route) {
+        const path = subMiddleware.route.path;
+        console.log(`➡️ ${basePath}${path}`);
+      }
+    });
+  }
 });
 
 // ✅ Serve Frontend (Only if the request is NOT an API request)
@@ -79,23 +94,33 @@ if (fs.existsSync(buildPath)) {
   console.warn("⚠️ Frontend build folder not found. Skipping frontend serving.");
 }
 
-// ✅ Handle unknown API routes explicitly (moved to the end)
-app.all("/api/*", (req, res) => {
-  console.error(`❌ API Route Not Found: ${req.originalUrl}`);
-  res.status(404).json({ message: "API route not found" });
-});
-
 // Debugging: Show all available routes
 app._router.stack.forEach((middleware) => {
   if (middleware.route) {
     console.log(`➡️ Registered API Route: ${middleware.route.path}`);
   } else if (middleware.name === "router") {
+    // Get the base path from the router's regexp
+    const basePath = middleware.regexp.toString()
+      .replace(/^\/\^\\\//, '')  // Remove leading /^\
+      .replace(/\\\//, '/')      // Replace escaped slash with regular slash
+      .replace(/\/\$/, '')       // Remove trailing /$
+      .replace(/\\\?/, '?')      // Replace escaped question mark
+      .replace(/\/i$/, '')       // Remove trailing /i
+      .replace(/\\\/\?\(\?=\\\/\\|\$\)/, ''); // Remove optional slash pattern
+    
     middleware.handle.stack.forEach((subMiddleware) => {
       if (subMiddleware.route) {
-        console.log(`➡️ Registered API Route: ${subMiddleware.route.path}`);
+        const path = subMiddleware.route.path;
+        console.log(`➡️ Registered API Route: ${basePath}${path}`);
       }
     });
   }
+});
+
+// ✅ Handle unknown API routes explicitly (moved to the end)
+app.all("/api/*", (req, res) => {
+  console.error(`❌ API Route Not Found: ${req.originalUrl}`);
+  res.status(404).json({ message: "API route not found" });
 });
 
 // ✅ Start the backend server

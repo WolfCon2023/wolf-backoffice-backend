@@ -17,8 +17,8 @@ const sprintSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Planning', 'Active', 'Completed', 'Cancelled'],
-    default: 'Planning'
+    enum: ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+    default: 'PLANNING'
   },
   startDate: {
     type: Date,
@@ -35,6 +35,10 @@ const sprintSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     default: 0
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   },
   metrics: {
     plannedStoryPoints: { type: Number, default: 0 },
@@ -87,7 +91,7 @@ sprintSchema.index({ endDate: 1 });
 
 // Method to check if sprint is active
 sprintSchema.methods.isActive = function() {
-  return this.status === 'Active';
+  return this.status === 'IN_PROGRESS';
 };
 
 // Method to calculate sprint progress
@@ -98,7 +102,7 @@ sprintSchema.methods.calculateProgress = function() {
 
 // Method to check if sprint is overdue
 sprintSchema.methods.isOverdue = function() {
-  return this.status === 'Active' && new Date() > this.endDate;
+  return this.status === 'IN_PROGRESS' && new Date() > this.endDate;
 };
 
 module.exports = mongoose.model("Sprint", sprintSchema); 
