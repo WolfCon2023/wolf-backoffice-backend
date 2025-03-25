@@ -508,4 +508,56 @@ exports.fixTeamStatus = async (req, res) => {
       error: error.message 
     });
   }
+};
+
+// Add team member
+exports.addTeamMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    console.log(`📡 Adding member ${userId} to team ${id}...`);
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find the team
+    const team = await Team.findOne({ 
+      _id: id, 
+      toBeDeleted: { $ne: true },
+      isDeleted: { $ne: true }
+    });
+
+    if (!team) {
+      console.warn("⚠️ Team not found");
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Check if user is already a member
+    const isMember = team.members.some(member => member.user.toString() === userId);
+    if (isMember) {
+      return res.status(400).json({ message: "User is already a member of this team" });
+    }
+
+    // Add the new member
+    team.members.push({
+      user: userId,
+      role: 'TEAM_MEMBER',
+      joinedAt: new Date()
+    });
+
+    await team.save();
+    console.log("✅ Team member added successfully");
+
+    // Get the updated team with populated members
+    const updatedTeam = await Team.findById(id)
+      .populate("members.user", "name email")
+      .populate("projects", "name key status");
+
+    res.json(updatedTeam);
+  } catch (error) {
+    console.error("❌ Error adding team member:", error);
+    res.status(500).json({ message: "Error adding team member", error: error.message });
+  }
 }; 

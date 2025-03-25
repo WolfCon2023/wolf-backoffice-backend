@@ -30,4 +30,7 @@ router.put("/:id/status", teamController.updateTeamStatus);
 // GET team members
 router.get("/:id/members", teamController.getTeamMembers);
 
+// POST add team member
+router.post("/:id/members", teamController.addTeamMember);
+
 module.exports = router;
