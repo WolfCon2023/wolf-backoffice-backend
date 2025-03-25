@@ -29,7 +29,10 @@ exports.getTeamById = async (req, res) => {
       toBeDeleted: { $ne: true },
       isDeleted: { $ne: true }
     })
-      .populate("members.user", "name email")
+      .populate({
+        path: "members.userId",
+        select: "firstName lastName email username title department role"
+      })
       .populate("projects", "name key status");
 
     if (!team) {
@@ -301,7 +304,10 @@ exports.getTeamMembers = async (req, res) => {
     console.log(`📡 Fetching members for team ${id}`);
     
     const team = await Team.findById(id)
-      .populate("members.user", "name email");
+      .populate({
+        path: "members.userId",
+        select: "firstName lastName email username title department role"
+      });
     
     if (!team) {
       console.warn("⚠️ Team not found");
@@ -514,15 +520,18 @@ exports.fixTeamStatus = async (req, res) => {
 exports.addTeamMember = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
+    const { userId, role = 'TEAM_MEMBER' } = req.body;
 
-    console.log(`📡 Adding member ${userId} to team ${id}...`);
+    console.log(`📡 Adding user ${userId} to team ${id} with role ${role}...`);
+    console.log('Request body:', req.body);
 
     if (!userId) {
+      console.warn('⚠️ Missing userId in request body');
       return res.status(400).json({ message: "User ID is required" });
     }
 
     // Find the team
+    console.log('🔍 Finding team...');
     const team = await Team.findOne({ 
       _id: id, 
       toBeDeleted: { $ne: true },
@@ -530,34 +539,57 @@ exports.addTeamMember = async (req, res) => {
     });
 
     if (!team) {
-      console.warn("⚠️ Team not found");
+      console.warn(`⚠️ Team not found with ID: ${id}`);
       return res.status(404).json({ message: "Team not found" });
     }
 
+    console.log(`✅ Found team: ${team.name}`);
+
     // Check if user is already a member
-    const isMember = team.members.some(member => member.user.toString() === userId);
+    console.log('🔍 Checking if user is already a member...');
+    const isMember = team.members.some(member => member.userId.toString() === userId);
     if (isMember) {
+      console.warn(`⚠️ User ${userId} is already a member of team ${team.name}`);
       return res.status(400).json({ message: "User is already a member of this team" });
     }
 
-    // Add the new member
+    // Add the new member with user reference
+    console.log('📝 Adding new member to team...');
     team.members.push({
-      user: userId,
-      role: 'TEAM_MEMBER',
+      userId: userId,
+      role: role,
       joinedAt: new Date()
     });
 
+    console.log('💾 Saving team...');
     await team.save();
     console.log("✅ Team member added successfully");
 
-    // Get the updated team with populated members
+    // Get the updated team with populated user data
+    console.log('🔍 Fetching updated team with populated data...');
     const updatedTeam = await Team.findById(id)
-      .populate("members.user", "name email")
+      .populate({
+        path: "members.userId",
+        select: "firstName lastName email username title department role"
+      })
       .populate("projects", "name key status");
 
+    console.log('✅ Team updated successfully');
     res.json(updatedTeam);
   } catch (error) {
     console.error("❌ Error adding team member:", error);
-    res.status(500).json({ message: "Error adding team member", error: error.message });
+    console.error("Error details:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyPattern: error.keyPattern,
+      keyValue: error.keyValue
+    });
+    res.status(500).json({ 
+      message: "Error adding team member", 
+      error: error.message,
+      details: error.stack
+    });
   }
 }; 

@@ -16,14 +16,14 @@ const teamSchema = new mongoose.Schema({
     default: 'ACTIVE'
   },
   members: [{
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
     role: {
       type: String,
-      enum: ['Product Owner', 'Scrum Master', 'Team Lead', 'Developer', 'Designer', 'QA', 'Other'],
-      default: 'Developer'
+      enum: ['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER'],
+      default: 'TEAM_MEMBER'
     },
     joinedAt: {
       type: Date,
@@ -73,7 +73,7 @@ const teamSchema = new mongoose.Schema({
 
 // Simple indexes
 teamSchema.index({ name: 1 });
-teamSchema.index({ 'members.user': 1 });
+teamSchema.index({ 'members.userId': 1 });
 teamSchema.index({ projects: 1 });
 teamSchema.index({ toBeDeleted: 1 });
 teamSchema.index({ isDeleted: 1 });
