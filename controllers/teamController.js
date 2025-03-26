@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Team = require("../models/Team");
+const User = require("../models/User");
 
 // Get all teams
 exports.getAllTeams = async (req, res) => {
@@ -530,6 +531,35 @@ exports.addTeamMember = async (req, res) => {
       return res.status(400).json({ message: "User ID is required" });
     }
 
+    // Normalize role to match schema enum values
+    const normalizedRole = role.toUpperCase();
+    if (!['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER'].includes(normalizedRole)) {
+      console.warn(`⚠️ Invalid role value: "${role}"`);
+      return res.status(400).json({ 
+        message: "Invalid role value", 
+        validRoles: ['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER']
+      });
+    }
+
+    // First verify the user exists
+    console.log('🔍 Verifying user exists...');
+    let user;
+    try {
+      user = await User.findById(userId);
+    } catch (error) {
+      console.error('❌ Error finding user:', error);
+      return res.status(500).json({ 
+        message: "Error finding user", 
+        error: error.message 
+      });
+    }
+    
+    if (!user) {
+      console.warn(`⚠️ User not found with ID: ${userId}`);
+      return res.status(404).json({ message: "User not found" });
+    }
+    console.log(`✅ Found user: ${user.firstName} ${user.lastName}`);
+
     // Find the team
     console.log('🔍 Finding team...');
     const team = await Team.findOne({ 
@@ -557,7 +587,7 @@ exports.addTeamMember = async (req, res) => {
     console.log('📝 Adding new member to team...');
     team.members.push({
       userId: userId,
-      role: role,
+      role: normalizedRole,
       joinedAt: new Date()
     });
 
