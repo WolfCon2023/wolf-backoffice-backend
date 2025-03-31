@@ -5,7 +5,8 @@ const {
   createSprint,
   getSprintById,
   deleteSprint,
-  updateSprint
+  updateSprint,
+  updateSprintStatus
 } = require("../controllers/sprintController");
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.get("/:id", getSprintById);
 
 // PUT update sprint
 router.put("/:id", updateSprint);
+
+// PUT update sprint status
+router.put("/:id/status", updateSprintStatus);
 
 // DELETE sprint (soft delete)
 router.delete("/:id", deleteSprint);

@@ -199,4 +199,46 @@ exports.getDeletedStories = async (req, res) => {
     console.error("❌ Error fetching deleted stories:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+/**
+ * Update story status
+ */
+exports.updateStoryStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
+    if (!validStatuses.includes(status)) {
+      console.warn(`⚠️ Invalid status provided: ${status}`);
+      return res.status(400).json({ 
+        message: 'Invalid status',
+        validStatuses
+      });
+    }
+
+    console.log(`📡 Updating status of story ${id} to ${status}`);
+    
+    const story = await Story.findOneAndUpdate(
+      { _id: id, type: 'Feature' },
+      { 
+        status,
+        updatedAt: Date.now()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!story) {
+      console.log(`⚠️ Story ${id} not found`);
+      return res.status(404).json({ message: "Story not found" });
+    }
+
+    console.log(`✅ Status updated for story: ${story.title}`);
+    res.json(story);
+  } catch (error) {
+    console.error("❌ Error updating story status:", error);
+    res.status(500).json({ message: "Failed to update story status", error: error.message });
+  }
 }; 

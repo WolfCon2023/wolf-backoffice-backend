@@ -17,8 +17,8 @@ const storySchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['To Do', 'In Progress', 'Done', 'Blocked'],
-    default: 'To Do'
+    enum: ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'],
+    default: 'PLANNING'
   },
   description: {
     type: String

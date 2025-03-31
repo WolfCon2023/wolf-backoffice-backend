@@ -27,6 +27,9 @@ router.post("/", storyController.createStory);
 // PUT update a story
 router.put("/:id", storyController.updateStory);
 
+// PUT update story status
+router.put("/:id/status", storyController.updateStoryStatus);
+
 // DELETE a story
 router.delete("/:id", storyController.deleteStory);
 

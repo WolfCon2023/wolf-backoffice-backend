@@ -183,10 +183,67 @@ const updateSprint = async (req, res) => {
   }
 };
 
+// Update sprint status
+const updateSprintStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    console.log('🔍 Sprint Status Update Request:');
+    console.log('- URL:', req.originalUrl);
+    console.log('- Method:', req.method);
+    console.log('- Sprint ID:', id);
+    console.log('- New Status:', status);
+    console.log('- Headers:', req.headers);
+    console.log('- Body:', req.body);
+
+    // Validate status
+    const validStatuses = ['PLANNING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
+    if (!validStatuses.includes(status)) {
+      console.log('❌ Invalid status:', status);
+      console.log('Valid statuses:', validStatuses);
+      return res.status(400).json({
+        message: 'Invalid status',
+        validStatuses
+      });
+    }
+
+    console.log('✅ Status validation passed');
+    console.log('📡 Attempting to update sprint in database...');
+
+    const sprint = await Sprint.findByIdAndUpdate(
+      id,
+      { 
+        status,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    );
+
+    if (!sprint) {
+      console.log(`⚠️ Sprint ${id} not found in database`);
+      return res.status(404).json({ message: "Sprint not found" });
+    }
+
+    console.log('✅ Sprint found and updated:');
+    console.log('- Sprint ID:', sprint._id);
+    console.log('- New Status:', sprint.status);
+    console.log('- Updated At:', sprint.updatedAt);
+
+    res.json(sprint);
+  } catch (error) {
+    console.error("❌ Error in updateSprintStatus:");
+    console.error("- Error Message:", error.message);
+    console.error("- Stack Trace:", error.stack);
+    res.status(500).json({ message: "Failed to update sprint status", error: error.message });
+  }
+};
+
 module.exports = {
   getAllSprints,
   createSprint,
   getSprintById,
   deleteSprint,
-  updateSprint
+  updateSprint,
+  updateSprintStatus
 }; 

@@ -4,6 +4,14 @@ const Project = require("../models/Project");
 const Story = require("../models/Story");
 const Sprint = require("../models/Sprint");
 const verifyToken = require("../middleware/authMiddleware");
+const {
+  getAllProjects,
+  createProject,
+  getProjectById,
+  deleteProject,
+  updateProject,
+  updateProjectStatus
+} = require("../controllers/projectController");
 
 const router = express.Router();
 
@@ -45,144 +53,22 @@ router.post("/seed", async (req, res) => {
 });
 
 // GET all projects
-router.get("/", async (req, res) => {
-  try {
-    console.log("📡 Fetching all projects...");
-    const projects = await Project.find({ isDeleted: { $ne: true } })
-      .populate("owner", "name email")
-      .populate("teams", "name");
-
-    if (!projects.length) {
-      console.log("⚠️ No projects found.");
-      return res.status(404).json({ message: "No projects found" });
-    }
-
-    console.log(`✅ Found ${projects.length} projects`);
-    res.json(projects);
-  } catch (error) {
-    console.error("❌ Error fetching projects:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
+router.get("/", getAllProjects);
 
 // GET project by ID
-router.get("/:id", async (req, res) => {
-  try {
-    console.log(`📡 Fetching project ${req.params.id}...`);
-    const project = await Project.findById(req.params.id)
-      .populate("owner", "name email")
-      .populate("teams", "name");
-
-    if (!project) {
-      console.log("⚠️ Project not found.");
-      return res.status(404).json({ message: "Project not found" });
-    }
-
-    console.log("✅ Project found:", project.name);
-    res.json(project);
-  } catch (error) {
-    console.error("❌ Error fetching project:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
+router.get("/:id", getProjectById);
 
 // POST create new project
-router.post("/", async (req, res) => {
-  try {
-    console.log("📡 Creating new project - Request Body:", JSON.stringify(req.body, null, 2));
-    
-    // Check required fields
-    if (!req.body.name || !req.body.key) {
-      return res.status(400).json({
-        message: "Missing required fields",
-        required: ["name", "key"],
-        received: Object.keys(req.body),
-      });
-    }
-
-    // Create project object with all required fields
-    const project = new Project({
-      name: req.body.name,
-      key: req.body.key,
-      description: req.body.description || "",
-      owner: req.user.id,
-      status: req.body.status || "Active",
-      // Handle dates explicitly
-      startDate: req.body.startDate ? new Date(req.body.startDate) : new Date(),
-      targetEndDate: req.body.targetEndDate ? new Date(req.body.targetEndDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      methodology: req.body.methodology || "Agile",
-      visibility: req.body.visibility || "Team Only",
-      tags: req.body.tags || [],
-      metrics: {
-        velocity: 0,
-        completedStoryPoints: 0,
-        totalStoryPoints: 0,
-        avgCycleTime: 0
-      }
-    });
-
-    console.log("📡 Saving project:", JSON.stringify(project, null, 2));
-    const savedProject = await project.save();
-    console.log("✅ Project created successfully");
-    res.status(201).json(savedProject);
-  } catch (error) {
-    console.error("❌ Error creating project:", error);
-    if (error.name === 'ValidationError') {
-      console.error("❌ Validation errors:", error.errors);
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: error.errors 
-      });
-    }
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
+router.post("/", createProject);
 
 // PUT update project
-router.put("/:id", async (req, res) => {
-  try {
-    console.log(`📡 Updating project ${req.params.id}:`, req.body);
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
+router.put("/:id", updateProject);
 
-    if (!project) {
-      console.log("⚠️ Project not found.");
-      return res.status(404).json({ message: "Project not found" });
-    }
-
-    console.log("✅ Project updated:", project.name);
-    res.json(project);
-  } catch (error) {
-    console.error("❌ Error updating project:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
+// PUT update project status
+router.put("/:id/status", updateProjectStatus);
 
 // DELETE project (soft delete)
-router.delete("/:id", async (req, res) => {
-  try {
-    console.log(`📡 Deleting project ${req.params.id}`);
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
-      { isDeleted: true, updatedAt: new Date() },
-      { new: true }
-    );
-
-    if (!project) {
-      console.log("⚠️ Project not found.");
-      return res.status(404).json({ message: "Project not found" });
-    }
-
-    console.log("✅ Project deleted:", project.name);
-    res.json({ message: "Project deleted successfully" });
-  } catch (error) {
-    console.error("❌ Error deleting project:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
+router.delete("/:id", deleteProject);
 
 // GET project metrics
 router.get("/:id/metrics", async (req, res) => {

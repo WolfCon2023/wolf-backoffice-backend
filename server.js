@@ -28,7 +28,20 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+  origin: [
+    'https://wolf-backoffice-suite-development.up.railway.app',
+    'http://localhost:3000',
+    'http://localhost:5000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Debug middleware to log route matching
