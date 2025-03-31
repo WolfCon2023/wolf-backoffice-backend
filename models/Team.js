@@ -22,8 +22,8 @@ const teamSchema = new mongoose.Schema({
     },
     role: {
       type: String,
-      enum: ['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER'],
-      default: 'TEAM_MEMBER'
+      enum: ['Team Member', 'Scrum Master', 'Developer', 'Business Analyst', 'QA Tester', 'Product Owner'],
+      default: 'Team Member'
     },
     joinedAt: {
       type: Date,

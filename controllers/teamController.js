@@ -524,7 +524,7 @@ exports.addTeamMember = async (req, res) => {
     const { userId, role = 'TEAM_MEMBER' } = req.body;
 
     console.log(`📡 Adding user ${userId} to team ${id} with role ${role}...`);
-    console.log('Request body:', req.body);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
 
     if (!userId) {
       console.warn('⚠️ Missing userId in request body');
@@ -532,12 +532,12 @@ exports.addTeamMember = async (req, res) => {
     }
 
     // Normalize role to match schema enum values
-    const normalizedRole = role.toUpperCase();
-    if (!['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER'].includes(normalizedRole)) {
+    const validRoles = ['Team Member', 'Scrum Master', 'Developer', 'Business Analyst', 'QA Tester', 'Product Owner'];
+    if (!validRoles.includes(role)) {
       console.warn(`⚠️ Invalid role value: "${role}"`);
       return res.status(400).json({ 
         message: "Invalid role value", 
-        validRoles: ['TEAM_LEAD', 'DEVELOPER', 'DESIGNER', 'QA', 'PRODUCT_OWNER', 'TEAM_MEMBER']
+        validRoles: validRoles
       });
     }
 
@@ -546,11 +546,28 @@ exports.addTeamMember = async (req, res) => {
     let user;
     try {
       user = await User.findById(userId);
+      console.log('User lookup result:', user ? {
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        title: user.title
+      } : 'User not found');
     } catch (error) {
       console.error('❌ Error finding user:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        stack: error.stack
+      });
       return res.status(500).json({ 
         message: "Error finding user", 
-        error: error.message 
+        error: error.message,
+        details: error.stack
       });
     }
     
@@ -562,11 +579,35 @@ exports.addTeamMember = async (req, res) => {
 
     // Find the team
     console.log('🔍 Finding team...');
-    const team = await Team.findOne({ 
-      _id: id, 
-      toBeDeleted: { $ne: true },
-      isDeleted: { $ne: true }
-    });
+    let team;
+    try {
+      team = await Team.findOne({ 
+        _id: id, 
+        toBeDeleted: { $ne: true },
+        isDeleted: { $ne: true }
+      });
+      console.log('Team lookup result:', team ? {
+        id: team._id,
+        name: team.name,
+        memberCount: team.members.length,
+        status: team.status
+      } : 'Team not found');
+    } catch (error) {
+      console.error('❌ Error finding team:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        stack: error.stack
+      });
+      return res.status(500).json({ 
+        message: "Error finding team", 
+        error: error.message,
+        details: error.stack
+      });
+    }
 
     if (!team) {
       console.warn(`⚠️ Team not found with ID: ${id}`);
@@ -583,28 +624,118 @@ exports.addTeamMember = async (req, res) => {
       return res.status(400).json({ message: "User is already a member of this team" });
     }
 
+    // Map user's role to team role if needed
+    let finalRole = role;
+    if (role === 'Team Member') {
+      console.log('ℹ️ Using user\'s existing role');
+      finalRole = user.role;
+    }
+
     // Add the new member with user reference
     console.log('📝 Adding new member to team...');
-    team.members.push({
-      userId: userId,
-      role: normalizedRole,
-      joinedAt: new Date()
-    });
+    try {
+      const newMember = {
+        userId: new mongoose.Types.ObjectId(userId),
+        role: finalRole,
+        joinedAt: new Date()
+      };
+      console.log('New member data:', newMember);
 
-    console.log('💾 Saving team...');
-    await team.save();
-    console.log("✅ Team member added successfully");
+      // Use direct MongoDB update for more reliable member addition
+      const db = mongoose.connection.db;
+      const collection = db.collection('teams');
+      const objectId = new mongoose.Types.ObjectId(id);
+
+      // First verify the current state of the team
+      const currentTeam = await collection.findOne({ _id: objectId });
+      console.log('Current team state:', {
+        id: currentTeam._id.toString(),
+        name: currentTeam.name,
+        memberCount: currentTeam.members.length
+      });
+
+      // Create a new members array with the new member
+      const updatedMembers = [...currentTeam.members, newMember];
+      console.log('Updated members array:', updatedMembers.map(m => ({
+        userId: m.userId.toString(),
+        role: m.role,
+        joinedAt: m.joinedAt
+      })));
+
+      // Perform the update
+      const updateResult = await collection.updateOne(
+        { _id: objectId },
+        { 
+          $set: { 
+            members: updatedMembers,
+            updatedAt: new Date()
+          }
+        }
+      );
+      
+      console.log('Update result:', updateResult);
+
+      if (!updateResult.acknowledged) {
+        throw new Error('Update not acknowledged by MongoDB');
+      }
+
+      console.log("✅ Team member added successfully");
+    } catch (error) {
+      console.error('❌ Error saving team with new member:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        stack: error.stack,
+        team: {
+          id: team._id,
+          name: team.name,
+          memberCount: team.members.length
+        }
+      });
+      return res.status(500).json({ 
+        message: "Error saving team with new member", 
+        error: error.message,
+        details: error.stack
+      });
+    }
 
     // Get the updated team with populated user data
     console.log('🔍 Fetching updated team with populated data...');
-    const updatedTeam = await Team.findById(id)
-      .populate({
-        path: "members.userId",
-        select: "firstName lastName email username title department role"
-      })
-      .populate("projects", "name key status");
+    let updatedTeam;
+    try {
+      updatedTeam = await Team.findById(id)
+        .populate({
+          path: "members.userId",
+          select: "firstName lastName email username title department role"
+        })
+        .populate("projects", "name key status");
+      console.log('✅ Team updated successfully');
+      console.log('Updated team members:', updatedTeam.members.map(m => ({
+        userId: m.userId._id,
+        name: `${m.userId.firstName} ${m.userId.lastName}`,
+        role: m.role,
+        joinedAt: m.joinedAt
+      })));
+    } catch (error) {
+      console.error('❌ Error fetching updated team:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        stack: error.stack
+      });
+      return res.status(500).json({ 
+        message: "Error fetching updated team", 
+        error: error.message,
+        details: error.stack
+      });
+    }
 
-    console.log('✅ Team updated successfully');
     res.json(updatedTeam);
   } catch (error) {
     console.error("❌ Error adding team member:", error);
@@ -614,7 +745,11 @@ exports.addTeamMember = async (req, res) => {
       stack: error.stack,
       code: error.code,
       keyPattern: error.keyPattern,
-      keyValue: error.keyValue
+      keyValue: error.keyValue,
+      request: {
+        params: req.params,
+        body: req.body
+      }
     });
     res.status(500).json({ 
       message: "Error adding team member", 
