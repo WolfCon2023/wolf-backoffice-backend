@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 const getAllProjects = async (req, res) => {
   try {
     const projects = await Project.find()
-      .populate('team', 'name')
+      .populate('teams', 'name')
       .sort({ createdAt: -1 });
     logger.info(`Retrieved ${projects.length} projects`);
     res.json(projects);
@@ -19,7 +19,7 @@ const getAllProjects = async (req, res) => {
 const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('team', 'name');
+      .populate('teams', 'name');
     
     if (!project) {
       logger.warn(`Project not found with ID: ${req.params.id}`);
@@ -94,7 +94,7 @@ const updateProjectStatus = async (req, res) => {
     const { status } = req.body;
     
     // Validate status
-    const validStatuses = ['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = ['Active', 'On Hold', 'Completed', 'Cancelled'];
     if (!validStatuses.includes(status)) {
       logger.warn(`Invalid status provided: ${status}`);
       return res.status(400).json({ 
