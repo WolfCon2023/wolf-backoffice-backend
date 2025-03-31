@@ -521,7 +521,7 @@ exports.fixTeamStatus = async (req, res) => {
 exports.addTeamMember = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, role = 'TEAM_MEMBER' } = req.body;
+    const { userId, role = 'Team Member' } = req.body;
 
     console.log(`📡 Adding user ${userId} to team ${id} with role ${role}...`);
     console.log('Request body:', JSON.stringify(req.body, null, 2));

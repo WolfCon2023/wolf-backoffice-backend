@@ -14,17 +14,28 @@ const customerRoutes = require("./routes/customers");
 const projectRoutes = require("./routes/projectRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
+const storyRoutes = require("./routes/storyRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const defectRoutes = require("./routes/defectRoutes");
 
 const app = express();
 
 // Request logging middleware (moved to top)
 app.use((req, res, next) => {
   console.log(`📡 Incoming Request: ${req.method} ${req.originalUrl}`);
+  console.log(`🔍 Request Headers:`, req.headers);
+  console.log(`🔑 Authorization:`, req.headers.authorization ? 'Present' : 'Missing');
   next();
 });
 
 app.use(cors());
 app.use(express.json());
+
+// Debug middleware to log route matching
+app.use((req, res, next) => {
+  console.log(`🔍 Attempting to match route: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // ✅ Connect to MongoDB
 const mongoURI = process.env.MONGO_URI;
@@ -44,17 +55,26 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
+app.use("/api/stories", storyRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/defects", defectRoutes);
 
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
 console.log("✅ Registered Route: /api/sprints");
-console.log("✅ Registered Route: /api/appointments");
-console.log("✅ Registered Route: /api/users");
-console.log("✅ Registered Route: /api/customers");
+console.log("✅ Registered Route: /api/stories");
+console.log("✅ Registered Route: /api/tasks");
+console.log("✅ Registered Route: /api/defects");
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working!" });
+});
+
+// ✅ Handle unknown API routes explicitly
+app.all("/api/*", (req, res) => {
+  console.error(`❌ API Route Not Found: ${req.originalUrl}`);
+  res.status(404).json({ message: "API route not found" });
 });
 
 // ✅ Log all available API routes to debug missing endpoints
@@ -115,12 +135,6 @@ app._router.stack.forEach((middleware) => {
       }
     });
   }
-});
-
-// ✅ Handle unknown API routes explicitly (moved to the end)
-app.all("/api/*", (req, res) => {
-  console.error(`❌ API Route Not Found: ${req.originalUrl}`);
-  res.status(404).json({ message: "API route not found" });
 });
 
 // ✅ Start the backend server

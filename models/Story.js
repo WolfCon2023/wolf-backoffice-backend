@@ -1,71 +1,67 @@
 const mongoose = require("mongoose");
 
 const storySchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  key: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
   type: {
     type: String,
-    enum: ['Story', 'Task', 'Bug', 'Spike'],
-    default: 'Story'
+    required: true,
+    enum: ['Feature', 'Bug', 'Task', 'Epic']
+  },
+  storyPoints: {
+    type: Number,
+    min: 0
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: ['To Do', 'In Progress', 'Done', 'Blocked'],
+    default: 'To Do'
   },
   description: {
-    type: String,
-    required: false
+    type: String
+  },
+  assignee: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  sprint: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sprint'
   },
   project: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Project',
     required: true
   },
-  epic: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Epic'
-  },
-  sprint: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Sprint'
-  },
-  status: {
+  key: {
     type: String,
-    enum: ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done', 'Blocked'],
-    default: 'Backlog'
+    required: true,
+    unique: true
   },
   priority: {
     type: String,
-    enum: ['Highest', 'High', 'Medium', 'Low', 'Lowest'],
+    enum: ['Low', 'Medium', 'High', 'Critical'],
     default: 'Medium'
-  },
-  assignee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
   },
   reporter: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  storyPoints: {
-    type: Number,
-    min: 0,
-    default: 0
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  startDate: {
-    type: Date
+  updatedAt: {
+    type: Date,
+    default: Date.now
   },
-  dueDate: {
-    type: Date
-  },
-  completedDate: {
-    type: Date
+  toBeDeleted: {
+    type: Boolean,
+    default: false
   },
   dependencies: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -129,12 +125,7 @@ storySchema.virtual('subtasks', {
 // Indexes
 storySchema.index({ key: 1 }, { unique: true });
 storySchema.index({ project: 1 });
-storySchema.index({ epic: 1 });
-storySchema.index({ sprint: 1 });
-storySchema.index({ assignee: 1 });
-storySchema.index({ reporter: 1 });
-storySchema.index({ status: 1 });
-storySchema.index({ priority: 1 });
 storySchema.index({ type: 1 });
+storySchema.index({ toBeDeleted: 1 });
 
 module.exports = mongoose.model("Story", storySchema); 

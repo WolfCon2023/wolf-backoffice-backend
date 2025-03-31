@@ -6,18 +6,16 @@ const Story = require("../models/Story");
  */
 exports.getAllDefects = async (req, res) => {
   try {
-    console.log("📡 Fetching all defects...");
+    console.log('📋 Fetching all defects...');
     const defects = await Story.find({ type: 'Bug' })
-      .populate("project", "name key")
-      .populate("assignee", "name email")
-      .populate("reporter", "name email")
-      .populate("epic", "name key");
-
+      .populate('reportedBy', 'firstName lastName email')
+      .populate('projectId', 'name key');
+    
     console.log(`✅ Found ${defects.length} defects`);
     res.json(defects);
   } catch (error) {
-    console.error("❌ Error fetching defects:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('❌ Error fetching defects:', error);
+    res.status(500).json({ message: 'Failed to fetch defects', error: error.message });
   }
 };
 
@@ -68,26 +66,18 @@ exports.getDefectsBySprint = async (req, res) => {
  */
 exports.getDefectById = async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log(`📡 Fetching defect ${id}...`);
+    const defect = await Story.findOne({ _id: req.params.id, type: 'Bug' })
+      .populate('reportedBy', 'firstName lastName email')
+      .populate('projectId', 'name key');
     
-    const defect = await Story.findOne({ _id: id, type: 'Bug' })
-      .populate("project", "name key")
-      .populate("assignee", "name email")
-      .populate("reporter", "name email")
-      .populate("epic", "name key")
-      .populate("sprint", "name startDate endDate");
-
     if (!defect) {
-      console.log(`⚠️ Defect ${id} not found`);
-      return res.status(404).json({ message: "Defect not found" });
+      return res.status(404).json({ message: 'Defect not found' });
     }
-
-    console.log(`✅ Found defect: ${defect.title}`);
+    
     res.json(defect);
   } catch (error) {
-    console.error("❌ Error fetching defect:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('❌ Error fetching defect:', error);
+    res.status(500).json({ message: 'Failed to fetch defect', error: error.message });
   }
 };
 
@@ -96,31 +86,24 @@ exports.getDefectById = async (req, res) => {
  */
 exports.createDefect = async (req, res) => {
   try {
-    console.log("📡 Creating new defect:", req.body);
-    
-    // Add type and reporter 
-    const defectData = {
+    const defect = new Story({
       ...req.body,
       type: 'Bug',
-      reporter: req.user.id,
-      // Set priority to 'High' by default for bugs
-      priority: req.body.priority || 'High'
-    };
+      reportedBy: req.user._id,
+      dateReported: Date.now(),
+      priority: req.body.priority || 'High' // Default priority for bugs is High
+    });
     
-    const defect = new Story(defectData);
-    await defect.save();
+    const savedDefect = await defect.save();
+    console.log('✅ Defect created:', savedDefect.title);
     
-    console.log(`✅ Defect created: ${defect.title}`);
-    res.status(201).json(defect);
+    res.status(201).json(savedDefect);
   } catch (error) {
-    console.error("❌ Error creating defect:", error);
+    console.error('❌ Error creating defect:', error);
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: error.errors 
-      });
+      return res.status(400).json({ message: 'Invalid defect data', error: error.message });
     }
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Failed to create defect', error: error.message });
   }
 };
 
@@ -129,38 +112,24 @@ exports.createDefect = async (req, res) => {
  */
 exports.updateDefect = async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log(`📡 Updating defect ${id}:`, req.body);
-    
-    // Ensure we can't change the type from 'Bug'
-    const updateData = {
-      ...req.body,
-      type: 'Bug',
-      updatedAt: Date.now()
-    };
-    
     const defect = await Story.findOneAndUpdate(
-      { _id: id, type: 'Bug' },
-      updateData,
+      { _id: req.params.id, type: 'Bug' },
+      { ...req.body, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-
+    
     if (!defect) {
-      console.log(`⚠️ Defect ${id} not found`);
-      return res.status(404).json({ message: "Defect not found" });
+      return res.status(404).json({ message: 'Defect not found' });
     }
-
-    console.log(`✅ Defect updated: ${defect.title}`);
+    
+    console.log('✅ Defect updated:', defect.title);
     res.json(defect);
   } catch (error) {
-    console.error("❌ Error updating defect:", error);
+    console.error('❌ Error updating defect:', error);
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: error.errors 
-      });
+      return res.status(400).json({ message: 'Invalid defect data', error: error.message });
     }
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Failed to update defect', error: error.message });
   }
 };
 
@@ -169,20 +138,16 @@ exports.updateDefect = async (req, res) => {
  */
 exports.deleteDefect = async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log(`📡 Deleting defect ${id}`);
+    const defect = await Story.findOneAndDelete({ _id: req.params.id, type: 'Bug' });
     
-    const defect = await Story.findOneAndDelete({ _id: id, type: 'Bug' });
-
     if (!defect) {
-      console.log(`⚠️ Defect ${id} not found`);
-      return res.status(404).json({ message: "Defect not found" });
+      return res.status(404).json({ message: 'Defect not found' });
     }
-
-    console.log(`✅ Defect deleted: ${defect.title}`);
-    res.json({ message: "Defect deleted successfully" });
+    
+    console.log('✅ Defect deleted:', defect.title);
+    res.json({ message: 'Defect deleted successfully' });
   } catch (error) {
-    console.error("❌ Error deleting defect:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('❌ Error deleting defect:', error);
+    res.status(500).json({ message: 'Failed to delete defect', error: error.message });
   }
 }; 
