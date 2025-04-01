@@ -198,7 +198,7 @@ const updateSprintStatus = async (req, res) => {
     console.log('- Body:', req.body);
 
     // Validate status
-    const validStatuses = ['PLANNING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
+    const validStatuses = ['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       console.log('❌ Invalid status:', status);
       console.log('Valid statuses:', validStatuses);
