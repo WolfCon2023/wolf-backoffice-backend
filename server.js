@@ -17,6 +17,7 @@ const sprintRoutes = require("./routes/sprintRoutes");
 const storyRoutes = require("./routes/storyRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const defectRoutes = require("./routes/defectRoutes");
+const featureRoutes = require("./routes/featureRoutes");
 
 const app = express();
 
@@ -99,6 +100,7 @@ app.use("/api/sprints", sprintRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/defects", defectRoutes);
+app.use("/api/features", featureRoutes);
 
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
@@ -106,6 +108,7 @@ console.log("✅ Registered Route: /api/sprints");
 console.log("✅ Registered Route: /api/stories");
 console.log("✅ Registered Route: /api/tasks");
 console.log("✅ Registered Route: /api/defects");
+console.log("✅ Registered Route: /api/features");
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {

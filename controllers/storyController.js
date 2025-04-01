@@ -1,4 +1,5 @@
 const Story = require("../models/Story");
+const Project = require("../models/Project");
 
 /**
  * Get all stories
@@ -6,7 +7,14 @@ const Story = require("../models/Story");
 exports.getAllStories = async (req, res) => {
   try {
     console.log("📋 Fetching all stories...");
-    const stories = await Story.find({ type: 'Feature' })
+    const query = {};
+    
+    // Only filter by type if it's provided in the query
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    const stories = await Story.find(query)
       .populate("assignee", "firstName lastName email")
       .populate("reporter", "firstName lastName email")
       .populate("project", "name key")
@@ -75,15 +83,38 @@ exports.createStory = async (req, res) => {
   try {
     console.log("📡 Creating new story:", req.body);
     
+    // Get the project to generate the key
+    const project = await Project.findById(req.body.project);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Find the highest story number for this project
+    const highestStory = await Story.findOne({ project: req.body.project })
+      .sort({ key: -1 })
+      .select('key');
+
+    let nextNumber = 1;
+    if (highestStory) {
+      const match = highestStory.key.match(/\d+$/);
+      if (match) {
+        nextNumber = parseInt(match[0]) + 1;
+      }
+    }
+
+    // Generate the key in format PROJECT-123
+    const key = `${project.key}-${nextNumber}`;
+    
     const story = new Story({
       ...req.body,
-      type: 'Feature',
+      key,
+      type: req.body.type || 'Feature', // Default to Feature if not specified
       reporter: req.user._id
     });
     
     const savedStory = await story.save();
     
-    console.log(`✅ Story created: ${savedStory.title}`);
+    console.log(`✅ Story created: ${savedStory.title} with key ${savedStory.key}`);
     res.status(201).json(savedStory);
   } catch (error) {
     console.error("❌ Error creating story:", error);
