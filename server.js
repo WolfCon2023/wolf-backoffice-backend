@@ -30,18 +30,46 @@ app.use((req, res, next) => {
 
 // CORS Configuration
 const corsOptions = {
-  origin: [
-    'https://wolf-backoffice-suite-development.up.railway.app',
-    'http://localhost:3000',
-    'http://localhost:5000'
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'https://wolf-backoffice-suite-development.up.railway.app',
+      'https://urban-bassoon-q74xggwgqp5pfxp7w-5000.app.github.dev',
+      'http://localhost:3000',
+      'http://localhost:5000'
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
   credentials: true,
-  optionsSuccessStatus: 200
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 // Debug middleware to log route matching
