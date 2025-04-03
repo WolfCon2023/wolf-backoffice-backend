@@ -136,8 +136,13 @@ exports.updateStory = async (req, res) => {
     const { id } = req.params;
     console.log(`📡 Updating story ${id}:`, req.body);
     
-    const story = await Story.findOneAndUpdate(
-      { _id: id, type: 'Feature' },
+    // Ensure reporter is present in the update data
+    if (!req.body.reporter) {
+      return res.status(400).json({ message: "Reporter (User ID) is required" });
+    }
+    
+    const story = await Story.findByIdAndUpdate(
+      id,
       { ...req.body, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
@@ -250,10 +255,10 @@ exports.updateStoryStatus = async (req, res) => {
       });
     }
 
-    console.log(`📡 Updating status of story ${id} to ${status}`);
-    
-    const story = await Story.findOneAndUpdate(
-      { _id: id, type: 'Feature' },
+    console.log(`📡 Updating story ${id} status to ${status}`);
+
+    const story = await Story.findByIdAndUpdate(
+      id,
       { 
         status,
         updatedAt: Date.now()
@@ -266,10 +271,16 @@ exports.updateStoryStatus = async (req, res) => {
       return res.status(404).json({ message: "Story not found" });
     }
 
-    console.log(`✅ Status updated for story: ${story.title}`);
+    console.log(`✅ Story status updated: ${story.title} -> ${status}`);
     res.json(story);
   } catch (error) {
     console.error("❌ Error updating story status:", error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: "Invalid story data", 
+        error: error.message 
+      });
+    }
     res.status(500).json({ message: "Failed to update story status", error: error.message });
   }
 }; 

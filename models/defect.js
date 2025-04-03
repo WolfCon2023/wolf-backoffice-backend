@@ -46,4 +46,4 @@ const defectSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('Defect', defectSchema); 
+module.exports = mongoose.model('Defect', defectSchema);  
