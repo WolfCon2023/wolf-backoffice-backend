@@ -4,7 +4,7 @@ const storySchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['Feature', 'Bug', 'Task', 'Epic']
+    enum: ['Feature', 'Defect', 'Task', 'Epic']
   },
   storyPoints: {
     type: Number,

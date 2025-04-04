@@ -2,12 +2,12 @@ const mongoose = require("mongoose");
 const Story = require("../models/Story");
 
 /**
- * Get all defects (stories with type = 'Bug')
+ * Get all defects
  */
 exports.getAllDefects = async (req, res) => {
   try {
     console.log('📋 Fetching all defects...');
-    const defects = await Story.find({ type: 'Bug' })
+    const defects = await Story.find({ type: 'Defect' })
       .populate('reportedBy', 'firstName lastName email')
       .populate('projectId', 'name key');
     
@@ -27,7 +27,7 @@ exports.getDefectsByProject = async (req, res) => {
     const { projectId } = req.params;
     console.log(`📡 Fetching defects for project ${projectId}...`);
     
-    const defects = await Story.find({ project: projectId, type: 'Bug' })
+    const defects = await Story.find({ project: projectId, type: 'Defect' })
       .populate("assignee", "name email")
       .populate("reporter", "name email")
       .populate("epic", "name key");
@@ -48,7 +48,7 @@ exports.getDefectsBySprint = async (req, res) => {
     const { sprintId } = req.params;
     console.log(`📡 Fetching defects for sprint ${sprintId}...`);
     
-    const defects = await Story.find({ sprint: sprintId, type: 'Bug' })
+    const defects = await Story.find({ sprint: sprintId, type: 'Defect' })
       .populate("project", "name key")
       .populate("assignee", "name email")
       .populate("reporter", "name email");
@@ -66,7 +66,7 @@ exports.getDefectsBySprint = async (req, res) => {
  */
 exports.getDefectById = async (req, res) => {
   try {
-    const defect = await Story.findOne({ _id: req.params.id, type: 'Bug' })
+    const defect = await Story.findOne({ _id: req.params.id, type: 'Defect' })
       .populate('reportedBy', 'firstName lastName email')
       .populate('projectId', 'name key');
     
@@ -88,10 +88,10 @@ exports.createDefect = async (req, res) => {
   try {
     const defect = new Story({
       ...req.body,
-      type: 'Bug',
+      type: 'Defect',
       reportedBy: req.user._id,
       dateReported: Date.now(),
-      priority: req.body.priority || 'High' // Default priority for bugs is High
+      priority: req.body.priority || 'High' // Default priority for defects is High
     });
     
     const savedDefect = await defect.save();
@@ -113,7 +113,7 @@ exports.createDefect = async (req, res) => {
 exports.updateDefect = async (req, res) => {
   try {
     const defect = await Story.findOneAndUpdate(
-      { _id: req.params.id, type: 'Bug' },
+      { _id: req.params.id, type: 'Defect' },
       { ...req.body, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
@@ -138,7 +138,7 @@ exports.updateDefect = async (req, res) => {
  */
 exports.deleteDefect = async (req, res) => {
   try {
-    const defect = await Story.findOneAndDelete({ _id: req.params.id, type: 'Bug' });
+    const defect = await Story.findOneAndDelete({ _id: req.params.id, type: 'Defect' });
     
     if (!defect) {
       return res.status(404).json({ message: 'Defect not found' });

@@ -1,15 +1,17 @@
 const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
-  assignee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  taskName: {
+    type: String,
+    required: true
   },
-  status: {
+  taskDescription: {
+    type: String
+  },
+  key: {
     type: String,
     required: true,
-    enum: ['To Do', 'In Progress', 'Done', 'Blocked'],
-    default: 'To Do'
+    unique: true
   },
   priority: {
     type: String,
@@ -19,16 +21,16 @@ const taskSchema = new mongoose.Schema({
   deadline: {
     type: Date
   },
-  taskName: {
-    type: String,
-    required: true
-  },
-  taskDescription: {
+  assignee: {
     type: String
+  },
+  status: {
+    type: String,
+    enum: ['Planning', 'In Progress', 'Completed', 'Cancelled', 'On Hold'],
+    default: 'Planning'
   },
   category: {
     type: String,
-    enum: ['Development', 'Testing', 'Documentation', 'Design', 'Other'],
     default: 'Development'
   },
   progress: {
@@ -36,6 +38,10 @@ const taskSchema = new mongoose.Schema({
     min: 0,
     max: 100,
     default: 0
+  },
+  taskNumber: {
+    type: Number,
+    required: true
   },
   createdAt: {
     type: Date,
@@ -48,5 +54,8 @@ const taskSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Create a compound index for taskNumber
+taskSchema.index({ taskNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('Task', taskSchema); 
