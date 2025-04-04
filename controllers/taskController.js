@@ -1,148 +1,153 @@
-const Story = require('../models/Story');
+const mongoose = require("mongoose");
+const Story = require("../models/Story");
 
 /**
- * Get all tasks
+ * Get all defects
  */
-exports.getAllTasks = async (req, res) => {
+exports.getAllDefects = async (req, res) => {
   try {
-    console.log('📋 Fetching all tasks...');
-    const tasks = await Story.find({ type: 'Task' })
-      .populate('assignee', 'firstName lastName email');
+    console.log('📋 Fetching all defects...');
+    const defects = await Story.find({ type: 'Defect' })
+      .populate('reportedBy', 'firstName lastName email')
+      .populate('projectId', 'name key');
     
-    console.log(`✅ Found ${tasks.length} tasks`);
-    res.json(tasks);
+    console.log(`✅ Found ${defects.length} defects`);
+    res.json(defects);
   } catch (error) {
-    console.error('❌ Error fetching tasks:', error);
-    res.status(500).json({ message: 'Failed to fetch tasks', error: error.message });
+    console.error('❌ Error fetching defects:', error);
+    res.status(500).json({ message: 'Failed to fetch defects', error: error.message });
   }
 };
 
 /**
- * Get a single task by ID
+ * Get defects by project ID
  */
-exports.getTaskById = async (req, res) => {
+exports.getDefectsByProject = async (req, res) => {
   try {
-    const task = await Story.findOne({ _id: req.params.id, type: 'Task' })
-      .populate('assignee', 'firstName lastName email');
+    const { projectId } = req.params;
+    console.log(`📡 Fetching defects for project ${projectId}...`);
     
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+    const defects = await Story.find({ project: projectId, type: 'Defect' })
+      .populate("assignee", "name email")
+      .populate("reporter", "name email")
+      .populate("epic", "name key");
+
+    console.log(`✅ Found ${defects.length} defects for project ${projectId}`);
+    res.json(defects);
+  } catch (error) {
+    console.error("❌ Error fetching defects by project:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+/**
+ * Get defects by sprint ID
+ */
+exports.getDefectsBySprint = async (req, res) => {
+  try {
+    const { sprintId } = req.params;
+    console.log(`📡 Fetching defects for sprint ${sprintId}...`);
+    
+    const defects = await Story.find({ sprint: sprintId, type: 'Defect' })
+      .populate("project", "name key")
+      .populate("assignee", "name email")
+      .populate("reporter", "name email");
+
+    console.log(`✅ Found ${defects.length} defects for sprint ${sprintId}`);
+    res.json(defects);
+  } catch (error) {
+    console.error("❌ Error fetching defects by sprint:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+/**
+ * Get defect by ID
+ */
+exports.getDefectById = async (req, res) => {
+  try {
+    const defect = await Story.findOne({ _id: req.params.id, type: 'Defect' })
+      .populate('reportedBy', 'firstName lastName email')
+      .populate('projectId', 'name key');
+    
+    if (!defect) {
+      return res.status(404).json({ message: 'Defect not found' });
     }
     
-    res.json(task);
+    res.json(defect);
   } catch (error) {
-    console.error('❌ Error fetching task:', error);
-    res.status(500).json({ message: 'Failed to fetch task', error: error.message });
+    console.error('❌ Error fetching defect:', error);
+    res.status(500).json({ message: 'Failed to fetch defect', error: error.message });
   }
 };
 
 /**
- * Create a new task
+ * Create a new defect
  */
-exports.createTask = async (req, res) => {
+exports.createDefect = async (req, res) => {
   try {
-    const task = new Story({
+    const defect = new Story({
       ...req.body,
-      type: 'Task',
-      createdAt: Date.now()
+      type: 'Defect',
+      reportedBy: req.user._id,
+      dateReported: Date.now(),
+      priority: req.body.priority || 'High' // Default priority for defects is High
     });
     
-    const savedTask = await task.save();
-    console.log('✅ Task created:', savedTask.taskName);
+    const savedDefect = await defect.save();
+    console.log('✅ Defect created:', savedDefect.title);
     
-    res.status(201).json(savedTask);
+    res.status(201).json(savedDefect);
   } catch (error) {
-    console.error('❌ Error creating task:', error);
+    console.error('❌ Error creating defect:', error);
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Invalid task data', error: error.message });
+      return res.status(400).json({ message: 'Invalid defect data', error: error.message });
     }
-    res.status(500).json({ message: 'Failed to create task', error: error.message });
+    res.status(500).json({ message: 'Failed to create defect', error: error.message });
   }
 };
 
 /**
- * Update a task
+ * Update a defect
  */
-exports.updateTask = async (req, res) => {
+exports.updateDefect = async (req, res) => {
   try {
-    const task = await Story.findOneAndUpdate(
-      { _id: req.params.id, type: 'Task' },
+    const defect = await Story.findOneAndUpdate(
+      { _id: req.params.id, type: 'Defect' },
       { ...req.body, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
     
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+    if (!defect) {
+      return res.status(404).json({ message: 'Defect not found' });
     }
     
-    console.log('✅ Task updated:', task.taskName);
-    res.json(task);
+    console.log('✅ Defect updated:', defect.title);
+    res.json(defect);
   } catch (error) {
-    console.error('❌ Error updating task:', error);
+    console.error('❌ Error updating defect:', error);
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Invalid task data', error: error.message });
+      return res.status(400).json({ message: 'Invalid defect data', error: error.message });
     }
-    res.status(500).json({ message: 'Failed to update task', error: error.message });
+    res.status(500).json({ message: 'Failed to update defect', error: error.message });
   }
 };
 
 /**
- * Delete a task
+ * Delete a defect
  */
-exports.deleteTask = async (req, res) => {
+exports.deleteDefect = async (req, res) => {
   try {
-    const task = await Story.findOneAndDelete({ _id: req.params.id, type: 'Task' });
+    const defect = await Story.findOneAndDelete({ _id: req.params.id, type: 'Defect' });
     
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+    if (!defect) {
+      return res.status(404).json({ message: 'Defect not found' });
     }
     
-    console.log('✅ Task deleted:', task.taskName);
-    res.json({ message: 'Task deleted successfully' });
+    console.log('✅ Defect deleted:', defect.title);
+    res.json({ message: 'Defect deleted successfully' });
   } catch (error) {
-    console.error('❌ Error deleting task:', error);
-    res.status(500).json({ message: 'Failed to delete task', error: error.message });
-  }
-};
-
-/**
- * Get tasks by project ID
- */
-exports.getTasksByProject = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-    console.log(`📡 Fetching tasks for project ${projectId}...`);
-    
-    const tasks = await Story.find({ project: projectId, type: 'Task' })
-      .populate("assignee", "firstName lastName email")
-      .populate("reporter", "firstName lastName email")
-      .populate("epic", "name key");
-
-    console.log(`✅ Found ${tasks.length} tasks for project ${projectId}`);
-    res.json(tasks);
-  } catch (error) {
-    console.error("❌ Error fetching tasks by project:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-/**
- * Get tasks by sprint ID
- */
-exports.getTasksBySprint = async (req, res) => {
-  try {
-    const { sprintId } = req.params;
-    console.log(`📡 Fetching tasks for sprint ${sprintId}...`);
-    
-    const tasks = await Story.find({ sprint: sprintId, type: 'Task' })
-      .populate("project", "name key")
-      .populate("assignee", "firstName lastName email")
-      .populate("reporter", "firstName lastName email");
-
-    console.log(`✅ Found ${tasks.length} tasks for sprint ${sprintId}`);
-    res.json(tasks);
-  } catch (error) {
-    console.error("❌ Error fetching tasks by sprint:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('❌ Error deleting defect:', error);
+    res.status(500).json({ message: 'Failed to delete defect', error: error.message });
   }
 }; 
