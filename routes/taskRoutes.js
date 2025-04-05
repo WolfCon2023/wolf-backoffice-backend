@@ -10,6 +10,8 @@ const Task = require('../models/Task');
 const router = express.Router();
 
 console.log("✅ Tasks API Route Loaded");
+console.log("🔍 taskController methods:", Object.keys(taskController));
+console.log("🔍 getAllTasks method:", taskController.getAllTasks);
 
 // Apply authentication middleware to all routes
 router.use(verifyToken);
