@@ -14,6 +14,7 @@ const customerRoutes = require("./routes/customers");
 const projectRoutes = require("./routes/projectRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
+const incrementRoutes = require("./routes/incrementRoutes");
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
+app.use("/api/increments", incrementRoutes);
 
 console.log("✅ Registered Route: /api/projects");
 console.log("✅ Registered Route: /api/teams");
@@ -51,6 +53,7 @@ console.log("✅ Registered Route: /api/sprints");
 console.log("✅ Registered Route: /api/appointments");
 console.log("✅ Registered Route: /api/users");
 console.log("✅ Registered Route: /api/customers");
+console.log("✅ Registered Route: /api/increments");
 
 // ✅ Test API Route
 app.get("/api/test", (req, res) => {
