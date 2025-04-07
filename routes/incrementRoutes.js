@@ -49,12 +49,16 @@ router.get('/backlog', verifyToken, async (req, res) => {
       return res.status(400).json({ message: "Project ID is required" });
     }
     
+    console.log(`📡 Fetching backlog data for project ${project}...`);
+    
     // Get active and future sprints
     const sprints = await Sprint.find({ 
       project,
       status: { $in: ['PLANNING', 'IN_PROGRESS'] },
       isDeleted: false
     }).sort({ startDate: 1 });
+    
+    console.log(`Found ${sprints.length} sprints for project ${project}`);
     
     // Get all increments for this project
     const increments = await Increment.find({ 
@@ -66,19 +70,46 @@ router.get('/backlog', verifyToken, async (req, res) => {
     .populate('assignedTo', 'firstName lastName username email')
     .populate('createdBy', 'firstName lastName username');
     
+    console.log(`Found ${increments.length} increments for project ${project}`);
+    
     // Group increments by sprint (or backlog if no sprint assigned)
-    const backlogData = {
-      sprints: sprints.map(sprint => ({
+    const backlogItems = [];
+    const sprintsWithIncrements = [];
+    
+    // Process sprints and add increments
+    for (const sprint of sprints) {
+      const sprintIncrements = increments.filter(inc => 
+        inc.sprint && inc.sprint._id && 
+        inc.sprint._id.toString() === sprint._id.toString()
+      );
+      
+      console.log(`Sprint ${sprint.name} (${sprint._id}) has ${sprintIncrements.length} increments`);
+      
+      sprintsWithIncrements.push({
         _id: sprint._id,
         name: sprint.name,
         status: sprint.status,
         startDate: sprint.startDate,
         endDate: sprint.endDate,
-        increments: increments.filter(inc => inc.sprint && inc.sprint._id.toString() === sprint._id.toString())
-      })),
-      backlogItems: increments.filter(inc => !inc.sprint)
+        increments: sprintIncrements
+      });
+    }
+    
+    // Find items without sprint assigned
+    for (const increment of increments) {
+      if (!increment.sprint) {
+        backlogItems.push(increment);
+      }
+    }
+    
+    console.log(`Backlog items (no sprint): ${backlogItems.length}`);
+    
+    const backlogData = {
+      sprints: sprintsWithIncrements,
+      backlogItems: backlogItems
     };
     
+    console.log(`✅ Backlog data prepared: ${sprintsWithIncrements.length} sprints and ${backlogItems.length} backlog items`);
     res.status(200).json(backlogData);
   } catch (error) {
     console.error("Error fetching backlog data:", error);
